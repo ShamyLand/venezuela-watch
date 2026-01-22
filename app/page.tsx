@@ -91,7 +91,7 @@ export default function Dashboard() {
     const avgTension = calculateAverageTension();
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#0a0e17] text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
+        <div className="flex flex-col min-h-screen text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
             {/* HEADER */}
             <header className="h-20 border-b border-[#00d4ff1a] bg-[#0d1526d9] backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
