@@ -1,52 +1,92 @@
 import { NextResponse } from 'next/server';
 import { fetchNews } from '@/lib/news-service';
+import { generateAnalysis } from '@/lib/gemini-service';
 import { supabase } from '@/lib/supabase';
-import { GoogleGenerativeAI } from '@google-cloud/generative-ai';
 
+// FORCE DYNAMIC: This route must not be cached, it runs on demand/schedule
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // 1. Authenticate Cron Request (Optional but recommended)
+        // const authHeader = request.headers.get('authorization');
+        // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        //   return new Response('Unauthorized', { status: 401 });
+        // }
 
-        // 1. Récupération des news
+        console.log("🚀 Starting Scheduled Analysis Job...");
+
+        // 2. Fetch Latest News
+        console.log("📰 Fetching news...");
         const articles = await fetchNews();
-        if (!articles || articles.length === 0) return NextResponse.json({ message: "No news" });
 
-        const context = articles.slice(0, 15).map((a: any) => `- ${a.title}`).join('\n');
+        if (!articles || articles.length === 0) {
+            console.log("⚠️ No new articles found.");
+            return NextResponse.json({ message: "No news found", success: false });
+        }
+        console.log(`✅ Found ${articles.length} articles.`);
 
-        // 2. Prompt de notation pour Gemini
-        const prompt = `
-            Analyse ces actualités du Venezuela :
-            ${context}
+        // 3. Prepare Context for Gemini (Limit to top 15 to avoid token limits)
+        const recentArticles = articles.slice(0, 15);
+        const context = recentArticles.map((a: any, i: number) =>
+            `${i + 1}. [${a.source}] ${a.title} (${a.publishedAt})`
+        ).join('\n');
 
-            Réponds EXCLUSIVEMENT en JSON avec ce format :
-            {
-              "flash": "Texte court",
-              "report": {
-                "tension": note de 1 à 10 (ex: 7.2),
-                "volatility": note de 1 à 10 (ex: 6.5),
-                "risk": note de 1 à 10 (ex: 8.0),
-                "content": "Texte détaillé de l'analyse"
-              },
-              "alerts": [{"title": "...", "description": "..."}]
+        // 4. Generate AI Analysis
+        console.log("🧠 Generating Gemini Analysis...");
+        const analysis = await generateAnalysis(context);
+
+        if (!analysis) {
+            console.error("❌ Gemini Analysis failed.");
+            return NextResponse.json({ message: "Analysis failed", success: false }, { status: 500 });
+        }
+        console.log("✅ Analysis generated successfully.");
+
+        // 5. Store Data in Supabase
+
+        // 5a. Store News Articles (Batch insert)
+        const newsToInsert = recentArticles.map((a: any) => ({
+            title_original: a.title,
+            url: a.url,
+            published_at: a.publishedAt,
+            source_name: a.source,
+            // Default fallback values
+            language: 'en',
+            title_fr: a.title // Ideally we'd translate this too, but for MVP we keep original or let frontend handle it
+        }));
+
+        // Use upsert to avoid duplicate URLs errors
+        const { error: newsError } = await supabase
+            .from('news')
+            .upsert(newsToInsert, { onConflict: 'url', ignoreDuplicates: true });
+
+        if (newsError) console.error("⚠️ News insert error:", newsError);
+
+        // 5b. Store Analysis
+        const { error: analysisError } = await supabase
+            .from('analyses')
+            .insert({
+                flash_json: analysis.flash,
+                report_json: analysis.report,
+                alerts_json: analysis.alerts
+            });
+
+        if (analysisError) {
+            console.error("❌ Analysis storage error:", analysisError);
+            throw analysisError;
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: "Analysis job completed",
+            data: {
+                articles_processed: recentArticles.length,
+                analysis_timestamp: new Date().toISOString()
             }
-        `;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const jsonOutput = JSON.parse(response.text().replace(/```json|```/g, ""));
-
-        // 3. Sauvegarde dans Supabase
-        await supabase.from('analyses').insert({
-            flash_json: { content: jsonOutput.flash },
-            report_json: jsonOutput.report, // Contient maintenant les notes + le texte
-            alerts_json: jsonOutput.alerts
         });
 
-        return NextResponse.json({ success: true });
     } catch (error: any) {
+        console.error("🔥 CRON JOB FAILED:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
