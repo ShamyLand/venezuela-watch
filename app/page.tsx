@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering (required for Supabase data fetching)
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
@@ -80,11 +83,11 @@ export default function Dashboard() {
     };
 
     // Helper to format fallback mock news if API fails
-    const displayNews = news.length > 0 ? news : [
+    const displayNews = news && news.length > 0 ? news : [
         { id: 1, title: "Initialisation du flux de données...", source: "Système", published_at: new Date().toISOString(), type: "System", flag: "🟢" }
     ];
 
-    const displayOil = oilPrices.length > 0 ? oilPrices : OIL_DATA_MOCK;
+    const displayOil = oilPrices && oilPrices.length > 0 ? oilPrices : OIL_DATA_MOCK;
     const avgTension = calculateAverageTension();
 
     return (

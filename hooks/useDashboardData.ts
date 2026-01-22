@@ -1,42 +1,75 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export function useDashboardData() {
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<any>(null)
+    const [news, setNews] = useState<any[]>([]);
+    const [analysis, setAnalysis] = useState<any>(null);
+    const [oilPrices, setOilPrices] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true)
-        
-        // On lance les 3 requêtes en même temps
-        const [newsRes, oilRes, analysisRes] = await Promise.all([
-          supabase.from('news').select('*').order('published_at', { ascending: false }).limit(10),
-          supabase.from('oil_prices').select('*').order('timestamp', { ascending: false }).limit(20),
-          supabase.from('analyses').select('*').order('created_at', { ascending: false }).limit(1)
-        ])
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                setLoading(true);
 
-        // On vérifie s'il y a des erreurs
-        if (newsRes.error) throw newsRes.error
-        
-        // On range les données dans le bon format pour page.tsx
-        setData({
-          news: newsRes.data || [],
-          oil_prices: oilRes.data || [],
-          analyses: analysisRes.data || []
-        })
-      } catch (err) {
-        console.error('Erreur hook:', err)
-        setError(err)
-      } finally {
-        setLoading(false)
-      }
-    }
+                // 1. Fetch Latest News (Limit 20)
+                const { data: newsData } = await supabase
+                    .from('news')
+                    .select('*')
+                    .order('published_at', { ascending: false })
+                    .limit(20);
 
-    fetchData()
-  }, [])
+                if (newsData) setNews(newsData);
 
-  return { data, loading, error }
+                // 2. Fetch Latest Analysis
+                const { data: analysisData } = await supabase
+                    .from('analyses')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (analysisData) {
+                    setAnalysis({
+                        flash: analysisData.flash_json,
+                        report: analysisData.report_json,
+                        alerts: analysisData.alerts_json,
+                        timestamp: analysisData.timestamp
+                    });
+                }
+
+                // 3. Fetch Oil Prices
+                // For simple chart, we might need to fetch history. For now just latest.
+                const { data: oilData } = await supabase
+                    .from('oil_prices')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(2); // Get latest Brent & WTI
+
+                if (oilData) setOilPrices(oilData);
+
+            } catch (error) {
+                console.error("Dashboard Data Fetch Error:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchData();
+
+        // Realtime Subscription (Optional bonus)
+        const subscription = supabase
+            .channel('dashboard')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'analyses' }, (payload) => {
+                console.log('New analysis received!', payload);
+                fetchData(); // Refresh all on new analysis
+            })
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    return { news, analysis, oilPrices, loading };
 }
