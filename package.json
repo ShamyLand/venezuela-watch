@@ -18,7 +18,8 @@
     "react": "latest",
     "react-dom": "latest",
     "recharts": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "tailwindcss-animate": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
