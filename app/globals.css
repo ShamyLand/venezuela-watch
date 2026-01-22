@@ -3,61 +3,77 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0a0e17;
-  --bg-secondary: #1a1f2e;
-  --bg-card: #0d1526;
-  --accent-blue: #00d4ff;
-  --accent-green: #00ff88;
-  --accent-orange: #ff6b35;
-  --accent-red: #ff3b3b;
-  --text-primary: #e8e8e8;
-  --text-secondary: #8892a0;
-  --border-glow: rgba(0, 212, 255, 0.3);
+  --background: #0a0e17;
+  --foreground: #e8e8e8;
+  --primary: #00d4ff;
 }
 
 body {
-  color: var(--text-primary);
-  background: var(--bg-primary);
   font-family: 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  /* Le filtre d'origine Antigravity pour éclaircir l'image */
+  background-image: 
+    linear-gradient(rgba(10, 14, 23, 0.4), rgba(10, 14, 23, 0.4)),
+    url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
-@layer components {
-  .glass-card {
-    background: rgba(13, 21, 38, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-  }
+/* --- MOTEUR DE STYLE ANTIGRAVITY --- */
 
-  .glow-border {
-    box-shadow: 0 0 15px var(--border-glow);
-    border-color: var(--accent-blue);
-  }
-
-  .terminal-text {
-    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-  }
-
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 8px;
-  }
+.terminal-text {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.5px;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.glass-card {
+  background: rgba(13, 21, 38, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
 }
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+
+.glass-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 212, 255, 0.3) !important;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--bg-secondary);
-  border-radius: 3px;
+
+.glow-border {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.05);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+
+/* Animations d'origine */
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 15px rgba(0, 212, 255, 0.2); }
+  50% { opacity: 0.7; box-shadow: 0 0 5px rgba(0, 212, 255, 0.1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-pulse-glow {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-terminal-blink {
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+/* News Items d'origine */
+.news-item-antigravity {
+  background: rgba(10, 14, 23, 0.4);
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+}
+
+.news-item-antigravity:hover {
+  background: rgba(26, 31, 46, 0.9);
+  border-left-color: #00d4ff;
+  transform: translateX(4px);
 }
