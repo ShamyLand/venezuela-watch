@@ -1,436 +1,126 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import {
-    Globe,
-    TrendingUp,
-    AlertTriangle,
-    Clock,
-    BarChart3,
-    Newspaper,
-    Cpu,
-    History,
-    ChevronRight,
-    ExternalLink,
-    ChevronUp
-} from "lucide-react";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    PieChart,
-    Pie,
-    Cell
-} from "recharts";
-
-// Mock data as fallback
-const OIL_DATA_MOCK = [
-    { time: "08:00", brent: 78.5, wti: 74.2 },
-    { time: "10:00", brent: 79.2, wti: 75.1 },
-    { time: "12:00", brent: 80.1, wti: 76.0 },
-    { time: "14:00", brent: 79.8, wti: 75.5 },
-    { time: "16:00", brent: 81.2, wti: 77.3 },
-    { time: "18:00", brent: 80.7, wti: 76.8 },
-];
-
-const PDVSA_EXPORTS = [
-    { name: 'Chine', value: 65, color: '#00d4ff' },
-    { name: 'Inde', value: 20, color: '#00ff88' },
-    { name: 'Autres', value: 15, color: '#ff6b35' },
-];
+import { useEffect, useState } from "react"
+import { useDashboardData } from "@/hooks/useDashboardData"
+import { Globe, TrendingUp, AlertTriangle, Clock, BarChart3, Newspaper, Cpu, History, ChevronRight, ExternalLink, ChevronUp } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
 export default function Dashboard() {
-    const { news, analysis, oilPrices, loading } = useDashboardData();
-    const [activeTab, setActiveTab] = useState("flash");
-    const [time, setTime] = useState(new Date());
+  const { data, loading, error } = useDashboardData()
+  const [activeTab, setActiveTab] = useState('flash')
 
-    useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+  // Sécurité anti-crash : si pas de données, on affiche un état de chargement propre
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-blue-500">Initialisation du terminal...</div>
+  
+  // Sécurité si crash de connexion
+  if (error) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500">Erreur de liaison satellite : {error.message}</div>
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    };
+  // Données de secours si la base est vide
+  const news = data?.news || []
+  const oilData = data?.oil_prices || []
+  const alerts = data?.alerts || []
 
-    // Helper to format fallback mock news if API fails
-    const displayNews = news.length > 0 ? news : [
-        { id: 1, title: "Initialisation du flux de données...", source: "Système", published_at: new Date().toISOString(), type: "System", flag: "🟢" }
-    ];
-
-    const displayOil = oilPrices.length > 0 ? oilPrices : OIL_DATA_MOCK;
-
-    return (
-        <div className="flex flex-col min-h-screen bg-[#0a0e17] text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
-            {/* HEADER */}
-            <header className="h-16 border-b border-[#1a1f2e] bg-[#0d1526]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#00d4ff]/10 rounded flex items-center justify-center border border-[#00d4ff]/30">
-                        <Globe className="w-6 h-6 text-[#00d4ff] animate-pulse" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tighter terminal-text">VENEZUELA WATCH</h1>
-                        <div className="flex items-center gap-2 text-[10px] text-[#8892a0] uppercase tracking-widest font-mono">
-                            <span className="flex items-center gap-1"><span className={`w-1.5 h-1.5 rounded-full ${loading ? 'bg-yellow-500 animate-bounce' : 'bg-green-500'}`}></span> {loading ? 'SYNCING...' : 'LIVE TERMINAL'}</span>
-                            <span className="opacity-30">|</span>
-                            <span>STRATEGIC INTEL UNIT</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="hidden md:flex items-center gap-8">
-                    <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-[#8892a0] font-mono uppercase tracking-tighter">Indicateur de tension</span>
-                        <div className="w-32 h-2 bg-[#1a1f2e] rounded-full mt-1 overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-yellow-500 to-red-500 transition-all duration-1000"
-                                style={{ width: analysis?.report?.indicateurs?.tension_geopolitique ? `${analysis.report.indicateurs.tension_geopolitique * 10}%` : '50%' }}
-                            ></div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-6 font-mono border-l border-[#1a1f2e] pl-6">
-                        <div className="text-right">
-                            <span className="block text-[10px] text-[#8892a0]">HEURE LOCALE (VNZ)</span>
-                            <span className="text-sm">{formatTime(new Date(time.getTime() - 4 * 60 * 60 * 1000))}</span>
-                        </div>
-                        <div className="text-right">
-                            <span className="block text-[10px] text-[#8892a0]">UTC / GMT</span>
-                            <span className="text-sm font-bold text-[#00d4ff]">{formatTime(time)}</span>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* MAIN CONTENT */}
-            <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto w-full">
-
-                {/* LEFT COLUMN - NEWS & OIL */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-
-                    {/* WIDGET 1: NEWS FEED */}
-                    <div className="glass-card flex flex-col h-[500px]">
-                        <div className="p-4 border-b border-[#1a1f2e] flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Newspaper className="w-4 h-4 text-[#00d4ff]" />
-                                <h2 className="text-xs uppercase font-bold tracking-widest font-mono">Flux News Direct</h2>
-                            </div>
-                            <span className="text-[10px] text-green-500 animate-pulse font-mono flex items-center gap-1">
-                                LIVE
-                            </span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-                            {displayNews.map((n: any, i: number) => (
-                                <div key={i} className="p-3 bg-[#0d1526] hover:bg-[#1a1f2e] transition-colors border-l-2 border-transparent hover:border-[#00d4ff] cursor-pointer group rounded">
-                                    <div className="flex justify-between items-start mb-1 text-[10px]">
-                                        <span className="text-[#8892a0] font-mono">{n.source_name || n.source} • {new Date(n.published_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                        <span className="px-1.5 py-0.5 bg-[#1a1f2e] text-[#e8e8e8] rounded border border-white/5">{n.category || 'News'}</span>
-                                    </div>
-                                    <h3 className="text-sm font-medium leading-snug group-hover:text-[#00d4ff] transition-colors line-clamp-2">
-                                        {n.title_fr || n.title}
-                                    </h3>
-                                    <div className="mt-2 flex items-center gap-1 text-[10px] text-[#8892a0]">
-                                        <ChevronRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* WIDGET 3: OIL PRICES */}
-                    <div className="glass-card p-4">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="w-4 h-4 text-[#00ff88]" />
-                                <h2 className="text-xs uppercase font-bold tracking-widest font-mono">Marché Pétrolier</h2>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">BRENT CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">$81.24</span>
-                                    <span className="text-[10px] text-[#00ff88] flex items-center mb-1 font-mono">
-                                        <ChevronUp className="w-3 h-3" /> 1.2%
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">WTI CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">$77.30</span>
-                                    <span className="text-[10px] text-[#00ff88] flex items-center mb-1 font-mono">
-                                        <ChevronUp className="w-3 h-3" /> 0.8%
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="h-[200px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={displayOil}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#1a1f2e" vertical={false} />
-                                    <XAxis dataKey="time" stroke="#4a5568" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#0d1526', borderColor: '#1a1f2e', fontSize: '12px' }}
-                                        itemStyle={{ color: '#00d4ff' }}
-                                    />
-                                    <Line type="monotone" dataKey="brent" stroke="#00d4ff" strokeWidth={2} dot={false} animationDuration={1000} />
-                                    <Line type="monotone" dataKey="wti" stroke="#00ff88" strokeWidth={2} dot={false} animationDuration={1000} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CENTER COLUMN - IA ANALYSIS */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
-
-                    <div className="glass-card flex flex-col h-full glow-border">
-                        {/* TABS HEADER */}
-                        <div className="grid grid-cols-3 border-b border-[#1a1f2e]">
-                            <button
-                                onClick={() => setActiveTab("flash")}
-                                className={`p-4 flex items-center justify-center gap-2 transition-all ${activeTab === 'flash' ? 'bg-[#00d4ff]/10 text-[#00d4ff] border-b-2 border-[#00d4ff]' : 'hover:bg-[#1a1f2e] text-[#8892a0]'}`}
-                            >
-                                <Cpu className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase tracking-tighter">Flash Synthèse</span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("report")}
-                                className={`p-4 flex items-center justify-center gap-2 transition-all ${activeTab === 'report' ? 'bg-[#00ff88]/10 text-[#00ff88] border-b-2 border-[#00ff88]' : 'hover:bg-[#1a1f2e] text-[#8892a0]'}`}
-                            >
-                                <BarChart3 className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase tracking-tighter">Rapport Détail</span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("alerts")}
-                                className={`p-4 flex items-center justify-center gap-2 transition-all ${activeTab === 'alerts' ? 'bg-[#ff6b35]/10 text-[#ff6b35] border-b-2 border-[#ff6b35]' : 'hover:bg-[#1a1f2e] text-[#8892a0]'}`}
-                            >
-                                <History className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase tracking-tighter">Alertes</span>
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                            {!analysis ? (
-                                <div className="flex flex-col items-center justify-center h-full text-[#8892a0]">
-                                    <Cpu className="w-8 h-8 animate-pulse mb-4" />
-                                    <p className="text-xs uppercase tracking-widest">Initialisation de l'IA...</p>
-                                    <p className="text-[10px] mt-2">En attente de données du CRON job</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {activeTab === 'flash' && analysis.flash && (
-                                        <div className="space-y-6 animate-in fade-in duration-500">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 px-3 py-1 bg-[#00d4ff]/10 text-[#00d4ff] rounded-full border border-[#00d4ff]/20">
-                                                    <TrendingUp className="w-3 h-3" />
-                                                    <span className="text-[10px] font-bold uppercase">Tendance : {analysis.flash.tendance}</span>
-                                                </div>
-                                                <span className="text-[10px] text-[#8892a0] font-mono">
-                                                    MAJ: {new Date(analysis.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-
-                                            <ul className="space-y-4">
-                                                {analysis.flash.points?.map((point: string, i: number) => (
-                                                    <li key={i} className="flex gap-3 text-sm border-l-2 border-[#00d4ff] pl-4 py-1">
-                                                        <span className="opacity-70">{point}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-
-                                            <div className="p-4 bg-[#0d1526] rounded border border-[#1a1f2e] mt-auto">
-                                                <p className="text-xs text-[#8892a0] italic">
-                                                    "{analysis.flash.tendance_label}"
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'report' && analysis.report && (
-                                        <div className="space-y-6 animate-in fade-in duration-500">
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {[
-                                                    { l: 'Tension', v: analysis.report.indicateurs?.tension_geopolitique, c: '#ff3b3b' },
-                                                    { l: 'Volatilité', v: analysis.report.indicateurs?.volatilite_petrole, c: '#00d4ff' },
-                                                    { l: 'Risque', v: analysis.report.indicateurs?.risque_sanctions, c: '#ff6b35' }
-                                                ].map((idx) => (
-                                                    <div key={idx.l} className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded text-center">
-                                                        <span className="block text-[8px] text-[#8892a0] uppercase mb-1">{idx.l}</span>
-                                                        <span className="text-lg font-bold" style={{ color: idx.c }}>{idx.v}/10</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <section>
-                                                <h4 className="text-[10px] font-bold uppercase text-[#00ff88] mb-2 tracking-widest flex items-center gap-2">
-                                                    Analyse Géopolitique
-                                                </h4>
-                                                <p className="text-xs leading-relaxed text-[#8892a0]">
-                                                    {analysis.report.geopolitique}
-                                                </p>
-                                            </section>
-
-                                            <section>
-                                                <h4 className="text-[10px] font-bold uppercase text-[#00ff88] mb-2 tracking-widest flex items-center gap-2">
-                                                    Économie & Pétrole
-                                                </h4>
-                                                <p className="text-xs leading-relaxed text-[#8892a0]">
-                                                    {analysis.report.economie_petrole}
-                                                </p>
-                                            </section>
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'alerts' && analysis?.alerts && (
-                                        <div className="space-y-3 animate-in fade-in duration-500">
-                                            {analysis.alerts.length === 0 && <p className="text-xs text-center text-[#8892a0]">Aucune alerte active.</p>}
-                                            {analysis.alerts.map((alert: any, i: number) => (
-                                                <div key={i} className={`p-3 border rounded flex items-start gap-3 ${alert.niveau === 'CRITIQUE' ? 'bg-[#ff3b3b]/10 border-[#ff3b3b]/30' : 'bg-[#ff6b35]/10 border-[#ff6b35]/30'}`}>
-                                                    <AlertTriangle className={`w-5 h-5 mt-1 shrink-0 ${alert.niveau === 'CRITIQUE' ? 'text-[#ff3b3b]' : 'text-[#ff6b35]'}`} />
-                                                    <div>
-                                                        <h4 className={`text-sm font-bold ${alert.niveau === 'CRITIQUE' ? 'text-[#ff3b3b]' : 'text-[#ff6b35]'}`}>{alert.titre}</h4>
-                                                        <p className="text-xs text-[#e8e8e8]/80 mt-1">{alert.description}</p>
-                                                        {alert.source_citee && (
-                                                            <span className={`text-[9px] font-mono mt-2 block ${alert.niveau === 'CRITIQUE' ? 'text-[#ff3b3b]/60' : 'text-[#ff6b35]/60'}`}>SOURCE: {alert.source_citee}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-
-                        <div className="p-4 border-t border-[#1a1f2e] bg-[#0d1526] flex justify-between items-center text-[10px] font-mono text-[#8892a0]">
-                            <span>GÉNÉRATION PROCHAINE : 1H (CRON)</span>
-                            <div className="flex gap-4">
-                                <button className="hover:text-white transition-colors underline flex items-center gap-1">
-                                    EXPORTER PDF <ExternalLink className="w-3 h-3" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN - MISC INFO */}
-                <div className="lg:col-span-3 flex flex-col gap-6">
-
-                    {/* PDVSA DATA / OPEP */}
-                    <div className="glass-card p-4">
-                        <h2 className="text-xs uppercase font-bold tracking-widest font-mono mb-4 flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-[#00d4ff]" /> Stats PDVSA / OPEP
-                        </h2>
-
-                        <div className="h-[150px] mb-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={PDVSA_EXPORTS}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={60}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {PDVSA_EXPORTS.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#0d1526', border: 'none', borderRadius: '4px', fontSize: '10px' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-[#8892a0]">Production (BPD)</span>
-                                <span className="font-mono text-[#00ff88]">845k ↑</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-[#8892a0]">Sanctions US</span>
-                                <span className="font-mono text-[#ff3b3b]">ACTIVES</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-[#8892a0]">Prochaine OPEP+</span>
-                                <span className="font-mono text-[#00d4ff]">12 FÉV</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* TIMELINE */}
-                    <div className="glass-card flex-1 flex flex-col min-h-[400px]">
-                        <div className="p-4 border-b border-[#1a1f2e]">
-                            <h2 className="text-xs uppercase font-bold tracking-widest font-mono flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-[#8892a0]" /> TIMELINE ÉVÉNEMENTS
-                            </h2>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 relative">
-                            <div className="absolute left-6 top-4 bottom-4 w-px bg-[#1a1f2e]"></div>
-                            {/* Note: Timeline could also be dynamic from news history if needed, for now static as requested */}
-                            {[
-                                { time: '16:45', icon: '📢', title: 'Déclaration Maduro TV' },
-                                { time: '14:20', icon: '🛢️', title: 'Panne Port Jose' },
-                                { time: '11:05', icon: '📊', title: 'Rapport production EIA' },
-                                { time: '09:30', icon: '🤝', title: 'Accord Chevron-PDVSA' },
-                                { time: 'HIER', icon: '📉', title: 'Baisse cours du Brent' },
-                            ].map((ev, i) => (
-                                <div key={i} className="relative pl-8 pb-6 group">
-                                    <div className="absolute left-[-2px] top-1.5 w-2 h-2 rounded-full bg-[#1a1f2e] group-hover:bg-[#00d4ff] z-10 transition-colors"></div>
-                                    <div className="text-[10px] font-mono text-[#8892a0] mb-1">{ev.time}</div>
-                                    <div className="text-xs flex items-center gap-2 hover:text-[#00d4ff] cursor-pointer transition-colors">
-                                        <span>{ev.icon}</span>
-                                        <span className="font-medium">{ev.title}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                </div>
-
-            </main>
-
-            {/* FOOTER / STATUS BAR */}
-            <footer className="h-10 border-t border-[#1a1f2e] bg-[#0d1526] px-6 flex items-center justify-between text-[10px] font-mono text-[#4a5568]">
-                <div className="flex gap-6">
-                    <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> API: CONNECTED</span>
-                    <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> DB: SYNC</span>
-                    <span className="hidden md:inline">SYSTEM STATUS: OPTIMAL</span>
-                </div>
-                <div className="flex gap-4">
-                    <span className="text-[#8892a0]">V1.0.4-BETA</span>
-                    <span className="text-[#00d4ff]">© 2026 VENEZUELA WATCH</span>
-                </div>
-            </footer>
-
-            <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1a1f2e;
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #4a5568;
-        }
-      `}</style>
+  return (
+    <main className="min-h-screen bg-[#020617] text-slate-200 p-4 font-mono selection:bg-blue-500/30">
+      {/* En-tête MSIE49 */}
+      <header className="flex justify-between items-center mb-6 border-b border-blue-900/50 pb-4">
+        <div className="flex items-center gap-3">
+          <Globe className="w-6 h-6 text-blue-400 animate-pulse" />
+          <div>
+            <h1 className="text-xl font-bold tracking-tighter text-blue-100">MSIE49 VENEZUELA VEILLE</h1>
+            <p className="text-[10px] text-blue-400/70 uppercase tracking-[0.2em]">Unité Renseignement Stratégique</p>
+          </div>
         </div>
-    );
+        <div className="text-right">
+          <div className="text-blue-400 text-sm font-bold flex items-center gap-2">
+            <Clock className="w-4 h-4" /> {new Date().toLocaleTimeString()}
+          </div>
+          <p className="text-[10px] text-blue-500/50">PARIS (FRANCE)</p>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* FLUX NEWS - Gauche */}
+        <section className="lg:col-span-4 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-bold flex items-center gap-2 text-blue-300">
+              <Newspaper className="w-4 h-4" /> FLUX NEWS DIRECT
+            </h2>
+            <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded animate-pulse">LIVE</span>
+          </div>
+          
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+            {news.length === 0 ? (
+              <p className="text-blue-500/40 text-xs italic">En attente de transmission...</p>
+            ) : news.map((item: any) => (
+              <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer" 
+                 className="block p-3 rounded-lg border border-blue-900/30 bg-blue-950/20 hover:bg-blue-900/30 transition-all group">
+                <div className="flex justify-between text-[10px] text-blue-400/60 mb-1">
+                  <span>{item.source} • {item.time}</span>
+                  <span className="bg-blue-900/40 px-1 rounded group-hover:text-blue-300">Détails</span>
+                </div>
+                <h3 className="text-sm font-medium leading-tight group-hover:text-blue-300 transition-colors">{item.title}</h3>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* GRAPHIQUES ET ANALYSE - Centre/Droite */}
+        <section className="lg:col-span-8 space-y-6">
+          {/* Marché Pétrolier */}
+          <div className="p-4 rounded-xl border border-blue-900/30 bg-blue-950/20">
+             <h2 className="text-sm font-bold mb-4 flex items-center gap-2 text-blue-300">
+              <TrendingUp className="w-4 h-4" /> MARCHÉ PÉTROLIER
+            </h2>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={oilData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="time" hide />
+                  <YAxis hide domain={['auto', 'auto']} />
+                  <Tooltip contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e3a8a'}} />
+                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Onglets Analyse */}
+          <div className="border border-blue-900/30 rounded-xl bg-blue-950/20 overflow-hidden">
+            <div className="flex border-b border-blue-900/30">
+              {['flash', 'rapport', 'alertes'].map((tab) => (
+                <button 
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-blue-500/20 text-blue-300 border-b-2 border-blue-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  {tab === 'flash' && <Cpu className="inline w-3 h-3 mr-2" />}
+                  {tab === 'rapport' && <History className="inline w-3 h-3 mr-2" />}
+                  {tab === 'alertes' && <AlertTriangle className="inline w-3 h-3 mr-2" />}
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div className="p-6 min-h-[300px]">
+              {activeTab === 'alertes' && (
+                <div className="space-y-4">
+                  {alerts.length === 0 ? (
+                    <div className="flex items-center justify-center h-48 border-2 border-dashed border-blue-900/20 rounded-lg">
+                       <p className="text-blue-900/50">Aucune alerte critique détectée</p>
+                    </div>
+                  ) : alerts.map((alert: any) => (
+                    <div key={alert.id} className="p-4 border-l-4 border-red-500 bg-red-500/10 rounded-r-lg">
+                      <h4 className="text-red-400 font-bold text-sm mb-1">{alert.title}</h4>
+                      <p className="text-xs text-slate-400">{alert.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeTab === 'flash' && <div className="text-sm text-blue-100/80 leading-relaxed italic">Sélectionnez un événement pour générer une synthèse...</div>}
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  )
 }
