@@ -1,92 +1,86 @@
 import { NextResponse } from 'next/server';
 import { fetchNews } from '@/lib/news-service';
-import { generateAnalysis } from '@/lib/gemini-service';
 import { supabase } from '@/lib/supabase';
+import { GoogleGenerativeAI } from '@google-cloud/generative-ai';
 
-// FORCE DYNAMIC: This route must not be cached, it runs on demand/schedule
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
-        // 1. Authenticate Cron Request (Optional but recommended)
-        // const authHeader = request.headers.get('authorization');
-        // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        //   return new Response('Unauthorized', { status: 401 });
-        // }
+        console.log("🚀 Lancement de l'analyse Antigravity...");
 
-        console.log("🚀 Starting Scheduled Analysis Job...");
-
-        // 2. Fetch Latest News
-        console.log("📰 Fetching news...");
+        // 1. Récupération des actualités (votre service d'origine)
         const articles = await fetchNews();
-
         if (!articles || articles.length === 0) {
-            console.log("⚠️ No new articles found.");
-            return NextResponse.json({ message: "No news found", success: false });
+            return NextResponse.json({ message: "Aucune news trouvée", success: false });
         }
-        console.log(`✅ Found ${articles.length} articles.`);
 
-        // 3. Prepare Context for Gemini (Limit to top 15 to avoid token limits)
+        // 2. Préparation du contexte pour Gemini (Top 15)
         const recentArticles = articles.slice(0, 15);
         const context = recentArticles.map((a: any, i: number) =>
-            `${i + 1}. [${a.source}] ${a.title} (${a.publishedAt})`
+            `${i + 1}. [${a.source}] ${a.title}`
         ).join('\n');
 
-        // 4. Generate AI Analysis
-        console.log("🧠 Generating Gemini Analysis...");
-        const analysis = await generateAnalysis(context);
+        // 3. Initialisation de Gemini avec le nouveau Prompt de notation
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        if (!analysis) {
-            console.error("❌ Gemini Analysis failed.");
-            return NextResponse.json({ message: "Analysis failed", success: false }, { status: 500 });
-        }
-        console.log("✅ Analysis generated successfully.");
+        const prompt = `
+            Tu es un expert en renseignement stratégique sur le Venezuela.
+            Analyse ces actualités :
+            ${context}
 
-        // 5. Store Data in Supabase
+            Répond EXCLUSIVEMENT sous forme d'un objet JSON strict avec cette structure :
+            {
+              "flash": { "content": "Une phrase courte et percutante en italique." },
+              "scores": {
+                "tension": note de 1 à 10 sur la tension politique (ex: 7.5),
+                "volatility": note de 1 à 10 sur la volatilité du pétrole (ex: 6.2),
+                "risk": note de 1 à 10 sur le risque global (ex: 8.1)
+              },
+              "report": "Une analyse détaillée de deux paragraphes sur la situation actuelle.",
+              "alerts": [
+                {"title": "NOM ALERTE", "description": "Détails de l'alerte"}
+              ]
+            }
+        `;
 
-        // 5a. Store News Articles (Batch insert)
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text().replace(/```json|```/g, "").trim();
+        const jsonOutput = JSON.parse(text);
+
+        // 4. Enregistrement des News dans Supabase (votre logique d'origine)
         const newsToInsert = recentArticles.map((a: any) => ({
             title_original: a.title,
             url: a.url,
             published_at: a.publishedAt,
             source_name: a.source,
-            // Default fallback values
             language: 'en',
-            title_fr: a.title // Ideally we'd translate this too, but for MVP we keep original or let frontend handle it
+            title_fr: a.title 
         }));
+        await supabase.from('news').upsert(newsToInsert, { onConflict: 'url', ignoreDuplicates: true });
 
-        // Use upsert to avoid duplicate URLs errors
-        const { error: newsError } = await supabase
-            .from('news')
-            .upsert(newsToInsert, { onConflict: 'url', ignoreDuplicates: true });
-
-        if (newsError) console.error("⚠️ News insert error:", newsError);
-
-        // 5b. Store Analysis
+        // 5. Enregistrement de l'Analyse avec les NOTES DYNAMIQUES
         const { error: analysisError } = await supabase
             .from('analyses')
             .insert({
-                flash_json: analysis.flash,
-                report_json: analysis.report,
-                alerts_json: analysis.alertes
+                flash_json: jsonOutput.flash,
+                report_json: {
+                    content: jsonOutput.report,
+                    tension: jsonOutput.scores.tension,
+                    volatility: jsonOutput.scores.volatility,
+                    risk: jsonOutput.scores.risk
+                },
+                alerts_json: jsonOutput.alerts
             });
 
-        if (analysisError) {
-            console.error("❌ Analysis storage error:", analysisError);
-            throw analysisError;
-        }
+        if (analysisError) throw analysisError;
 
-        return NextResponse.json({
-            success: true,
-            message: "Analysis job completed",
-            data: {
-                articles_processed: recentArticles.length,
-                analysis_timestamp: new Date().toISOString()
-            }
-        });
+        return NextResponse.json({ success: true, message: "Analyse et notation terminées" });
 
     } catch (error: any) {
-        console.error("🔥 CRON JOB FAILED:", error);
+        console.error("🔥 Erreur analyse:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
