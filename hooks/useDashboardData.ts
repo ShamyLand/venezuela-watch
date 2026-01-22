@@ -12,12 +12,12 @@ export function useDashboardData() {
             try {
                 setLoading(true);
 
-                // 1. Fetch Latest News (Limit 20)
+                // 1. Fetch Latest News (Extended to 100 for richer display)
                 const { data: newsData } = await supabase
                     .from('news')
                     .select('*')
                     .order('published_at', { ascending: false })
-                    .limit(20);
+                    .limit(100);
 
                 if (newsData) setNews(newsData);
 
@@ -38,13 +38,12 @@ export function useDashboardData() {
                     });
                 }
 
-                // 3. Fetch Oil Prices
-                // For simple chart, we might need to fetch history. For now just latest.
+                // 3. Fetch Oil Prices (Extended for 30-day detailed chart)
                 const { data: oilData } = await supabase
                     .from('oil_prices')
                     .select('*')
                     .order('timestamp', { ascending: false })
-                    .limit(2); // Get latest Brent & WTI
+                    .limit(200); // Show 30 days of price history
 
                 if (oilData) setOilPrices(oilData);
 

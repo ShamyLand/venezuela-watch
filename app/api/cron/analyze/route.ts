@@ -8,81 +8,61 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     try {
-        // 1. Authenticate Cron Request (Optional but recommended)
-        // const authHeader = request.headers.get('authorization');
-        // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        //   return new Response('Unauthorized', { status: 401 });
-        // }
+        console.log("🚀 Starting RSS + Gemini Analysis Job...");
 
-        console.log("🚀 Starting Scheduled Analysis Job...");
+        // 1. Fetch News from RSS Feeds (7 sources)
+        console.log("📡 Fetching from RSS feeds...");
+        const articles = await fetchNews();
+        console.log(`✅ Retrieved ${articles.length} articles from RSS`);
 
-        // 2. Fetch Latest News
-        console.log("📰 Fetching news...");
-        let articles = await fetchNews();
+        // 2. Store News in Database
+        if (articles.length > 0) {
+            console.log("💾 Storing RSS articles...");
 
-        // Fallback: Use mock data if News API fails (quota exceeded)
-        if (!articles || articles.length === 0) {
-            console.log("⚠️ News API unavailable, using mock data...");
-            articles = [
-                {
-                    title: "Venezuela announces new economic measures amid sanctions",
-                    source: "Reuters",
-                    publishedAt: new Date().toISOString(),
-                    url: "https://reuters.com/mock"
-                },
-                {
-                    title: "PDVSA oil production reaches 840,000 barrels per day",
-                    source: "Bloomberg",
-                    publishedAt: new Date().toISOString(),
-                    url: "https://bloomberg.com/mock"
-                },
-                {
-                    title: "US considers easing Venezuela sanctions",
-                    source: "Financial Times",
-                    publishedAt: new Date().toISOString(),
-                    url: "https://ft.com/mock"
-                }
-            ];
+            const newsToInsert = articles.map((article: any) => ({
+                title_original: article.title_original || article.title,
+                title_fr: article.title,
+                url: article.url,
+                published_at: article.published_at,
+                source_name: article.source_name,
+                language: article.language || 'en'
+            }));
+
+            const { error: newsError } = await supabase
+                .from('news')
+                .insert(newsToInsert);
+
+            if (newsError) {
+                console.warn("⚠️ Some RSS articles couldn't be stored:", newsError.message);
+            } else {
+                console.log(`✅ ${newsToInsert.length} RSS articles stored`);
+            }
         }
-        console.log(`✅ Using ${articles.length} articles for analysis.`);
 
-        // 3. Prepare Context for Gemini (Limit to top 15 to avoid token limits)
-        const recentArticles = articles.slice(0, 15);
-        const context = recentArticles.map((a: any, i: number) =>
-            `${i + 1}. [${a.source}] ${a.title} (${a.publishedAt})`
-        ).join('\n');
+        // 3. Generate AI Analysis from RSS articles
+        console.log("🤖 Generating Gemini analysis from RSS data...");
 
-        // 4. Generate AI Analysis
-        console.log("🧠 Generating Gemini Analysis...");
-        const analysis = await generateAnalysis(context);
+        const newsContext = JSON.stringify({
+            articles: articles.slice(0, 15).map((a: any) => ({
+                title: a.title,
+                source: a.source_name,
+                published: a.published_at,
+                url: a.url,
+                summary: a.summary
+            }))
+        });
+
+        const analysis = await generateAnalysis(newsContext);
 
         if (!analysis) {
-            console.error("❌ Gemini Analysis failed.");
-            return NextResponse.json({ message: "Analysis failed", success: false }, { status: 500 });
+            console.log("❌ Gemini analysis failed.");
+            return NextResponse.json({ message: "Analysis failed", success: false });
         }
-        console.log("✅ Analysis generated successfully.");
 
-        // 5. Store Data in Supabase
+        console.log("✅ Gemini analysis generated successfully!");
 
-        // 5a. Store News Articles (Batch insert)
-        const newsToInsert = recentArticles.map((a: any) => ({
-            title_original: a.title,
-            url: a.url,
-            published_at: a.publishedAt,
-            source_name: a.source,
-            // Default fallback values
-            language: 'en',
-            title_fr: a.title // Ideally we'd translate this too, but for MVP we keep original or let frontend handle it
-        }));
-
-        // Use upsert to avoid duplicate URLs errors
-        const { error: newsError } = await supabase
-            .from('news')
-            .upsert(newsToInsert, { onConflict: 'url', ignoreDuplicates: true });
-
-        if (newsError) console.error("⚠️ News insert error:", newsError);
-
-        // 5b. Store Analysis
+        // 4. Store Analysis
+        console.log("💾 Storing analysis...");
         const { error: analysisError } = await supabase
             .from('analyses')
             .insert({
@@ -96,17 +76,23 @@ export async function GET(request: Request) {
             throw analysisError;
         }
 
+        console.log("✅ Analysis stored successfully!");
+
         return NextResponse.json({
             success: true,
-            message: "Analysis job completed",
+            message: "RSS + Gemini analysis completed",
             data: {
-                articles_processed: recentArticles.length,
+                articles_processed: articles.length,
                 analysis_timestamp: new Date().toISOString()
             }
         });
 
-    } catch (error: any) {
-        console.error("🔥 CRON JOB FAILED:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    } catch (error) {
+        console.error("❌ Analysis Job Error:", error);
+        return NextResponse.json({
+            message: "Analysis failed",
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
     }
 }
