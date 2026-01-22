@@ -12,6 +12,7 @@
     "@google/generative-ai": "^0.21.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.6",
+    "@tailwindcss/postcss": "latest",
     "clsx": "latest",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.462.0",
@@ -20,6 +21,7 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.14.1",
     "tailwind-merge": "latest",
+    "tailwindcss": "latest",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
