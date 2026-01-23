@@ -1,78 +1,79 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
 const apiKey = process.env.GEMINI_API_KEY!;
 const genAI = new GoogleGenerativeAI(apiKey);
+
 export const SYSTEM_PROMPT = `
-Tu es un analyste géopolitique senior spécialisé dans le Venezuela, les relations USA-Amérique latine, et les marchés pétroliers.
-Analyse les actualités fournies et génère un JSON en FRANÇAIS avec cette structure EXACTE:
+Tu es un analyste géopolitique senior spécialisé Venezuela.
+
+Analyse les articles fournis et génère un JSON complet en FRANÇAIS avec cette structure EXACTE:
+
 {
   "flash": {
-    "content": "Une phrase d'impact de 15-20 mots maximum résumant la situation actuelle du Venezuela",
-    "points": [
-      "Point clé 1 (15 mots max)",
-      "Point clé 2 (15 mots max)",
-      "Point clé 3 (15 mots max)",
-      "Point clé 4 (15 mots max)",
-      "Point clé 5 (15 mots max)"
-    ],
-    "tendance": "HAUSSIÈRE ou BAISSIÈRE ou STABLE",
-    "tendance_label": "Phrase courte de 10 mots expliquant la tendance"
+    "content": "Une phrase d'impact courte résumant la situation actuelle",
+    "points": ["Point clé 1", "Point clé 2", "Point clé 3", "Point clé 4", "Point clé 5"],
+    "tendance": "HAUSSIÈRE|BAISSIÈRE|STABLE",
+    "tendance_label": "Phrase courte expliquant la tendance"
   },
   "report": {
     "tension": 7.5,
     "volatility": 6.2,
     "risk": 8.1,
-    "content": "Analyse détaillée en 2-3 paragraphes couvrant la situation géopolitique actuelle, les impacts économiques et pétroliers, et les perspectives à court terme.",
-    "geopolitique": "Analyse spécifique du contexte géopolitique",
-    "economie_petrole": "Analyse spécifique de l'économie et du marché pétrolier",
+    "content": "Analyse détaillée en 2-3 paragraphes couvrant la situation géopolitique, économique et pétrolière.",
+    "geopolitique": "Analyse du contexte géopolitique",
+    "economie_petrole": "Analyse de l'économie et du marché pétrolier",
     "indicateurs": {
       "tension_geopolitique": 7.5,
       "volatilite_petrole": 6.2,
       "risque_sanctions": 8.1
-    }
+    },
+    "timeline": [
+      {
+        "date": "2026-01-23T14:30:00Z",
+        "title": "Titre court de l'événement",
+        "description": "Description courte",
+        "icon": "📢|🛢️|📉|🤝|📊"
+      }
+    ]
   },
   "alerts": [
     {
-      "title": "Titre court de l'alerte",
-      "description": "Description détaillée de l'alerte en 2-3 phrases",
-      "niveau": "CRITIQUE ou MOYEN ou MINEUR",
-      "titre": "Titre court de l'alerte (duplicate pour compatibilité)",
-      "source_citee": "Nom de la source d'information"
+      "titre": "Titre de l'alerte",
+      "description": "Description détaillée",
+      "niveau": "CRITIQUE|MOYEN|MINEUR",
+      "source_citee": "Source de l'information"
     }
   ]
 }
-RÈGLES CRITIQUES:
-- Tous les scores (tension, volatility, risk) doivent être des NOMBRES entre 1.0 et 10.0
-- Les clés du JSON sont EN ANGLAIS, les valeurs EN FRANÇAIS
-- Basé UNIQUEMENT sur les actualités fournies
-- Analyse factuelle et précise, pas de spéculation
-- Au moins 2 alertes pertinentes
+
+RÈGLES :
+- Scores entre 1.0 et 10.0
+- Base-toi UNIQUEMENT sur les articles fournis
+- Dates timeline au format ISO 8601
+- Timeline : Extrais 5 à 8 événements majeurs des articles
+- Icônes timeline : Choisis l'icône la plus pertinente
 `;
+
 export async function generateAnalysis(newsContext: string) {
-    try {
-        // ✅ MODÈLE STABLE CONFIRMÉ: gemini-2.5-flash
-        // Documentation officielle: https://ai.google.dev/gemini-api/docs/models/gemini
-        // C'est le modèle stable avec le meilleur rapport qualité/prix (Janvier 2026)
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent([
-            SYSTEM_PROMPT,
-            `Voici les dernières nouvelles sur le Venezuela provenant de flux RSS internationaux:\n\n${newsContext}`
-        ]);
-        const response = await result.response;
-        const text = response.text();
-        console.log("✅ Gemini Response Received:", text.substring(0, 200));
-        // Extract JSON from markdown code blocks if present
-        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsedAnalysis = JSON.parse(jsonStr);
-        console.log("✅ Analysis Parsed Successfully");
-        return parsedAnalysis;
-    } catch (error) {
-        console.error("❌ Gemini Analysis Failed:", error);
-        if (error instanceof Error) {
-            console.error("Error details:", {
-                message: error.message,
-                stack: error.stack
-            });
-        }
-        return null;
-    }
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const result = await model.generateContent([
+      SYSTEM_PROMPT,
+      `Voici les dernières actualités à analyser :\n${newsContext}\n\nDate actuelle : ${new Date().toISOString()}`
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Gemini Analysis Failed:", error);
+    return null;
+  }
 }

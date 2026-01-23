@@ -1,6 +1,8 @@
 "use client";
+
 // Force dynamic rendering (required for Supabase data fetching)
 export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
@@ -30,6 +32,7 @@ import {
     Pie,
     Cell
 } from "recharts";
+
 // Mock data as fallback
 const OIL_DATA_MOCK = [
     { time: "08:00", brent: 78.5, wti: 74.2 },
@@ -39,16 +42,19 @@ const OIL_DATA_MOCK = [
     { time: "16:00", brent: 81.2, wti: 77.3 },
     { time: "18:00", brent: 80.7, wti: 76.8 },
 ];
+
 const PDVSA_EXPORTS = [
     { name: 'Chine', value: 65, color: '#00d4ff' },
     { name: 'Inde', value: 20, color: '#00ff88' },
     { name: 'Autres', value: 15, color: '#ff6b35' },
 ];
+
 export default function Dashboard() {
     const { news, analysis, oilPrices, loading, lastUpdate, refreshData } = useDashboardData();
     const [activeTab, setActiveTab] = useState("flash");
     const [times, setTimes] = useState({ paris: "--:--:--", caracas: "--:--:--" });
     const [selectedNews, setSelectedNews] = useState<any>(null);
+
     useEffect(() => {
         const timer = setInterval(() => {
             const now = new Date();
@@ -60,6 +66,7 @@ export default function Dashboard() {
                     timeZone: tz,
                     hour12: false
                 }).format(now);
+
             setTimes({
                 paris: formatTimezone('Europe/Paris'),
                 caracas: formatTimezone('America/Caracas')
@@ -67,6 +74,7 @@ export default function Dashboard() {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
     // Calculate average tension score from AI analysis
     const calculateAverageTension = () => {
         if (!analysis?.report) return 5.0;
@@ -76,12 +84,15 @@ export default function Dashboard() {
         const risk = scores.risk || scores.indicateurs?.risque_sanctions || 0;
         return ((tension + volatility + risk) / 3).toFixed(1);
     };
+
     // Helper to format fallback mock news if API fails
     const displayNews = news && news.length > 0 ? news : [
         { id: 1, title: "Initialisation du flux de données...", source: "Système", published_at: new Date().toISOString(), type: "System", flag: "🟢" }
     ];
+
     const displayOil = oilPrices && oilPrices.length > 0 ? oilPrices : OIL_DATA_MOCK;
     const avgTension = calculateAverageTension();
+
     return (
         <div className="flex flex-col min-h-screen text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
             {/* HEADER */}
@@ -102,6 +113,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
                 <div className="hidden lg:flex items-center gap-6 px-8 border-l border-white/10 h-10">
                     <div className="text-right">
                         <span className="block text-[8px] text-[#8892a0] uppercase font-bold mb-1">Tension Moyenne</span>
@@ -114,6 +126,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-xl font-black font-mono text-red-500">{avgTension}</div>
                 </div>
+
                 <div className="flex gap-8 font-mono text-right">
                     <div>
                         <span className="block text-[9px] text-[#8892a0] font-bold">CARACAS</span>
@@ -125,10 +138,13 @@ export default function Dashboard() {
                     </div>
                 </div>
             </header>
+
             {/* MAIN CONTENT */}
             <main className="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto w-full">
+
                 {/* LEFT COLUMN - NEWS & OIL */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
+
                     {/* WIDGET 1: NEWS FEED */}
                     <div className="glass-card flex flex-col h-[500px]">
                         <div className="p-5 bg-black/20 border-b border-white/5 flex items-center justify-between">
@@ -142,12 +158,11 @@ export default function Dashboard() {
                                 const newsDate = new Date(n.published_at);
                                 const formattedDate = newsDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
                                 const formattedTime = newsDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                                // Google Search fallback pour éviter les 404
-                                const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(n.title_fr || n.title)}`;
+
                                 return (
                                     <div
                                         key={i}
-                                        onClick={() => window.open(googleSearchUrl, '_blank')}
+                                        onClick={() => n.url ? window.open(n.url, '_blank') : setSelectedNews(n)}
                                         className="news-item-antigravity block p-4 rounded-xl border border-transparent hover:border-[#00d4ff4d] hover:scale-[1.02] transition-all cursor-pointer"
                                     >
                                         <div className="flex justify-between items-start mb-2 text-[10px]">
@@ -159,15 +174,18 @@ export default function Dashboard() {
                                         <h3 className="text-[13px] font-semibold leading-snug line-clamp-2">
                                             {n.title_fr || n.title}
                                         </h3>
-                                        <div className="mt-2 flex items-center gap-1 text-[9px] text-[#00ff88]">
-                                            <ExternalLink className="w-3 h-3" />
-                                            <span>Rechercher sur Google</span>
-                                        </div>
+                                        {n.url && (
+                                            <div className="mt-2 flex items-center gap-1 text-[9px] text-[#00ff88]">
+                                                <ExternalLink className="w-3 h-3" />
+                                                <span>Lire l'article</span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
+
                     {/* WIDGET 3: OIL PRICES */}
                     <div className="glass-card p-4">
                         <div className="flex items-center justify-between mb-6">
@@ -176,6 +194,7 @@ export default function Dashboard() {
                                 <h2 className="text-xs uppercase font-bold tracking-widest font-mono">Marché Pétrolier</h2>
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
                                 <span className="text-[9px] text-[#8892a0] font-mono block mb-1">BRENT CRUDE</span>
@@ -196,6 +215,7 @@ export default function Dashboard() {
                                 </div>
                             </div>
                         </div>
+
                         <div className="h-[280px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={displayOil}>
@@ -217,16 +237,17 @@ export default function Dashboard() {
                                         labelStyle={{ color: '#00d4ff', fontWeight: 'bold', marginBottom: '4px' }}
                                         formatter={(value: any, name: string) => [`$${value}`, name === 'brent' ? 'Brent Crude' : 'WTI Crude']}
                                     />
-                                    {/* isAnimationActive={false} to prevent disappearance bug */}
-                                    <Area type="monotone" dataKey="brent" stroke="#00d4ff" strokeWidth={3} fill="url(#brentGradient)" isAnimationActive={false} />
-                                    <Area type="monotone" dataKey="wti" stroke="#00ff88" strokeWidth={3} fill="url(#wtiGradient)" isAnimationActive={false} />
+                                    <Area type="monotone" dataKey="brent" stroke="#00d4ff" strokeWidth={3} fill="url(#brentGradient)" />
+                                    <Area type="monotone" dataKey="wti" stroke="#00ff88" strokeWidth={3} fill="url(#wtiGradient)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
+
                 {/* CENTER COLUMN - IA ANALYSIS */}
                 <div className="lg:col-span-5 flex flex-col gap-6">
+
                     <div className="glass-card flex flex-col h-full glow-border">
                         {/* TABS HEADER */}
                         <div className="grid grid-cols-3 border-b border-[#1a1f2e]">
@@ -252,6 +273,7 @@ export default function Dashboard() {
                                 <span className="text-[10px] font-bold uppercase tracking-tighter">Alertes</span>
                             </button>
                         </div>
+
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {!analysis ? (
                                 <div className="flex flex-col items-center justify-center h-full text-[#8892a0]">
@@ -272,6 +294,7 @@ export default function Dashboard() {
                                                     MAJ: {new Date(analysis.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(analysis.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
+
                                             {analysis.flash.content && (
                                                 <div className="p-4 bg-[#0d1526] rounded border border-[#1a1f2e]">
                                                     <p className="text-sm text-[#e0e0e0] leading-relaxed">
@@ -279,6 +302,7 @@ export default function Dashboard() {
                                                     </p>
                                                 </div>
                                             )}
+
                                             {analysis.flash.points && analysis.flash.points.length > 0 && (
                                                 <ul className="space-y-4">
                                                     {analysis.flash.points.map((point: string, i: number) => (
@@ -288,6 +312,7 @@ export default function Dashboard() {
                                                     ))}
                                                 </ul>
                                             )}
+
                                             {analysis.flash.tendance_label && (
                                                 <div className="p-4 bg-[#0d1526] rounded border border-[#1a1f2e] mt-auto">
                                                     <p className="text-xs text-[#8892a0] italic">
@@ -297,6 +322,7 @@ export default function Dashboard() {
                                             )}
                                         </div>
                                     )}
+
                                     {activeTab === 'report' && analysis.report && (
                                         <div className="space-y-6 animate-in fade-in duration-500">
                                             <div className="grid grid-cols-3 gap-3">
@@ -311,6 +337,7 @@ export default function Dashboard() {
                                                     </div>
                                                 ))}
                                             </div>
+
                                             {analysis.report.content && (
                                                 <div className="p-5 bg-white/5 rounded-xl border border-white/5">
                                                     <p className="text-sm leading-relaxed text-[#c0c8d6] whitespace-pre-wrap">
@@ -318,6 +345,7 @@ export default function Dashboard() {
                                                     </p>
                                                 </div>
                                             )}
+
                                             {analysis.report.geopolitique && (
                                                 <section>
                                                     <h4 className="text-[10px] font-bold uppercase text-[#00ff88] mb-2 tracking-widest flex items-center gap-2">
@@ -328,6 +356,7 @@ export default function Dashboard() {
                                                     </p>
                                                 </section>
                                             )}
+
                                             {analysis.report.economie_petrole && (
                                                 <section>
                                                     <h4 className="text-[10px] font-bold uppercase text-[#00ff88] mb-2 tracking-widest flex items-center gap-2">
@@ -340,6 +369,7 @@ export default function Dashboard() {
                                             )}
                                         </div>
                                     )}
+
                                     {activeTab === 'alerts' && analysis?.alerts && (
                                         <div className="space-y-3 animate-in fade-in duration-500">
                                             {analysis.alerts.length === 0 && <p className="text-xs text-center text-[#8892a0]">Aucune alerte active.</p>}
@@ -360,6 +390,7 @@ export default function Dashboard() {
                                 </>
                             )}
                         </div>
+
                         <div className="p-4 border-t border-[#1a1f2e] bg-[#0d1526] flex justify-between items-center text-[10px] font-mono text-[#8892a0]">
                             <span>GÉNÉRATION PROCHAINE : 1H (CRON)</span>
                             <div className="flex gap-4">
@@ -370,14 +401,17 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
+
                 {/* RIGHT COLUMN - MISC INFO */}
                 <div className="lg:col-span-3 flex flex-col gap-6">
+
                     {/* PDVSA DATA / OPEP */}
                     <div className="glass-card p-4">
                         <h2 className="text-xs uppercase font-bold tracking-widest font-mono mb-2 flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-[#00d4ff]" /> Destinations Exportations PDVSA
                         </h2>
                         <p className="text-[9px] text-[#8892a0] mb-4">Répartition par pays (% du volume total)</p>
+
                         <div className="h-[180px] mb-4">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -414,6 +448,7 @@ export default function Dashboard() {
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
+
                         {/* Légende manuelle */}
                         <div className="space-y-2 mb-4 pb-4 border-b border-[#1a1f2e]">
                             {PDVSA_EXPORTS.map((dest) => (
@@ -426,6 +461,7 @@ export default function Dashboard() {
                                 </div>
                             ))}
                         </div>
+
                         <div className="space-y-3">
                             <div className="flex justify-between items-center text-xs">
                                 <span className="text-[#8892a0]">Production (BPD)</span>
@@ -441,56 +477,64 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </div>
-                </div>
-                {/* TIMELINE - FULL WIDTH BOTTOM ROW */}
-                <div className="lg:col-span-12 glass-card flex flex-col">
-                    <div className="p-4 border-b border-[#1a1f2e]">
-                        <h2 className="text-xs uppercase font-bold tracking-widest font-mono flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-[#8892a0]" /> TIMELINE ÉVÉNEMENTS
-                        </h2>
-                    </div>
-                    <div className="flex-1 overflow-x-auto p-4 custom-scrollbar">
-                        <div className="flex gap-4 pb-4 min-w-max relative">
-                            {/* Ligne horizontale de connexion */}
-                            <div className="absolute top-8 left-0 right-0 h-px bg-[#1a1f2e]"></div>
-                            {[
-                                { date: '2026-01-23T16:45:00', icon: '📢', title: 'Déclaration Maduro TV', description: 'Annonce de nouvelles réformes économiques' },
-                                { date: '2026-01-23T14:20:00', icon: '🛢️', title: 'Panne Port Jose', description: 'Suspension temporaire des exportations' },
-                                { date: '2026-01-23T11:05:00', icon: '📊', title: 'Rapport Production EIA', description: 'Hausse de 2.3% de la production' },
-                                { date: '2026-01-23T09:30:00', icon: '🤝', title: 'Accord Chevron-PDVSA', description: 'Extension du partenariat jusqu\'en 2027' },
-                                { date: '2026-01-22T18:00:00', icon: '📉', title: 'Baisse Cours Brent', description: 'Chute de 1.5% suite aux déclarations OPEP' },
-                            ].map((ev, i) => {
-                                const eventDate = new Date(ev.date);
-                                const formattedDate = eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                const formattedTime = eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                    <div key={i} className="relative group min-w-[200px] cursor-pointer" title={ev.description}>
-                                        {/* Dot connector */}
-                                        <div className="absolute top-7 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#00d4ff] border-2 border-[#0d1526] z-10 group-hover:scale-125 transition-transform" />
-                                        {/* Event card */}
-                                        <div className="mt-12 p-3 bg-[#0d1526] border border-[#1a1f2e] rounded-lg group-hover:border-[#00d4ff4d] group-hover:shadow-lg group-hover:shadow-[#00d4ff]/20 transition-all">
-                                            <div className="text-center mb-2">
-                                                <span className="text-2xl">{ev.icon}</span>
-                                            </div>
-                                            <h4 className="text-xs font-semibold text-center mb-2 line-clamp-2">
-                                                {ev.title}
-                                            </h4>
-                                            <div className="text-[9px] text-center text-[#8892a0] font-mono">
-                                                <div>{formattedDate}</div>
-                                                <div className="text-[#00d4ff]">{formattedTime}</div>
-                                            </div>
-                                            {/* Hover tooltip */}
-                                            <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#0d1526] border border-[#00d4ff] rounded text-[10px] text-[#e8e8e8] z-20 shadow-xl">
-                                                {ev.description}
+
+                    {/* TIMELINE */}
+                    <div className="glass-card flex-1 flex flex-col lg:col-span-3">
+                        <div className="p-4 border-b border-[#1a1f2e]">
+                            <h2 className="text-xs uppercase font-bold tracking-widest font-mono flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-[#8892a0]" /> TIMELINE ÉVÉNEMENTS
+                            </h2>
+                        </div>
+                        <div className="flex-1 overflow-x-auto p-4">
+                            <div className="flex gap-4 pb-4 min-w-max relative">
+                                {/* Ligne horizontale de connexion */}
+                                <div className="absolute top-8 left-0 right-0 h-px bg-[#1a1f2e]"></div>
+
+                                {[
+                                    { date: '2026-01-23T16:45:00', icon: '📢', title: 'Déclaration Maduro TV', description: 'Annonce de nouvelles réformes économiques' },
+                                    { date: '2026-01-23T14:20:00', icon: '🛢️', title: 'Panne Port Jose', description: 'Suspension temporaire des exportations' },
+                                    { date: '2026-01-23T11:05:00', icon: '📊', title: 'Rapport Production EIA', description: 'Hausse de 2.3% de la production' },
+                                    { date: '2026-01-23T09:30:00', icon: '🤝', title: 'Accord Chevron-PDVSA', description: 'Extension du partenariat jusqu\'en 2027' },
+                                    { date: '2026-01-22T18:00:00', icon: '📉', title: 'Baisse Cours Brent', description: 'Chute de 1.5% suite aux déclarations OPEP' },
+                                ].map((ev, i) => {
+                                    const eventDate = new Date(ev.date);
+                                    const formattedDate = eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                    const formattedTime = eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+                                    return (
+                                        <div key={i} className="relative group min-w-[180px] cursor-pointer" title={ev.description}>
+                                            {/* Dot connector */}
+                                            <div className="absolute top-7 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-[#00d4ff] border-2 border-[#0d1526] z-10 group-hover:scale-125 transition-transform" />
+
+                                            {/* Event card */}
+                                            <div className="mt-12 p-3 bg-[#0d1526] border border-[#1a1f2e] rounded-lg group-hover:border-[#00d4ff4d] group-hover:shadow-lg group-hover:shadow-[#00d4ff]/20 transition-all">
+                                                <div className="text-center mb-2">
+                                                    <span className="text-2xl">{ev.icon}</span>
+                                                </div>
+                                                <h4 className="text-xs font-semibold text-center mb-2 line-clamp-2">
+                                                    {ev.title}
+                                                </h4>
+                                                <div className="text-[9px] text-center text-[#8892a0] font-mono">
+                                                    <div>{formattedDate}</div>
+                                                    <div className="text-[#00d4ff]">{formattedTime}</div>
+                                                </div>
+
+                                                {/* Hover tooltip */}
+                                                <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#0d1526] border border-[#00d4ff] rounded text-[10px] text-[#e8e8e8] z-20 shadow-xl">
+                                                    {ev.description}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
+
                 </div>
+
             </main>
+
             {/* NEWS MODAL */}
             {selectedNews && (
                 <div
@@ -504,7 +548,7 @@ export default function Dashboard() {
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                                 <div className="text-[10px] text-[#00d4ff] font-mono mb-2">
-                                    {selectedNews.source_name || selectedNews.source} • {new Date(selectedNews.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(selectedNews.published_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                    {selectedNews.source_name || selectedNews.source} \u2022 {new Date(selectedNews.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} \u00e0 {new Date(selectedNews.published_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                                 <h3 className="text-xl font-bold mb-4">{selectedNews.title_fr || selectedNews.title}</h3>
                             </div>
@@ -512,9 +556,10 @@ export default function Dashboard() {
                                 onClick={() => setSelectedNews(null)}
                                 className="ml-4 text-[#8892a0] hover:text-white transition-colors"
                             >
-                                ✕
+                                \u2715
                             </button>
                         </div>
+
                         <div className="space-y-4">
                             {selectedNews.description && (
                                 <div className="p-4 bg-[#0d1526] rounded-lg border border-[#1a1f2e]">
@@ -523,13 +568,15 @@ export default function Dashboard() {
                                     </p>
                                 </div>
                             )}
+
                             {!selectedNews.description && (
                                 <div className="p-4 bg-[#0d1526] rounded-lg border border-[#1a1f2e] text-center">
                                     <p className="text-sm text-[#8892a0] italic">
-                                        Résumé non disponible pour cet article
+                                        R\u00e9sum\u00e9 non disponible pour cet article
                                     </p>
                                 </div>
                             )}
+
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setSelectedNews(null)}
@@ -537,19 +584,22 @@ export default function Dashboard() {
                                 >
                                     FERMER
                                 </button>
-                                {/* Google Search URL for the fallback button in modal too */}
-                                <button
-                                    onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(selectedNews.title_fr || selectedNews.title)}`, '_blank')}
-                                    className="flex-1 px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8d4] text-[#0a0e17] rounded text-sm font-mono font-bold transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    RECHERCHER SUR GOOGLE
-                                </button>
+                                {selectedNews.url && (
+                                    <button
+                                        onClick={() => window.open(selectedNews.url, '_blank')}
+                                        className="flex-1 px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8d4] text-[#0a0e17] rounded text-sm font-mono font-bold transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        LIRE L'ARTICLE COMPLET
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+
+
             {/* FOOTER / STATUS BAR */}
             <footer className="h-10 border-t border-[#1a1f2e] bg-[#0d1526] px-6 flex items-center justify-between text-[10px] font-mono text-[#4a5568]">
                 <div className="flex gap-6">
@@ -571,10 +621,10 @@ export default function Dashboard() {
                     <span className="text-[#00d4ff]">© 2026 VENEZUELA WATCH</span>
                 </div>
             </footer>
+
             <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
-          height: 4px; /* Added height for horizontal scrollbar */
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
