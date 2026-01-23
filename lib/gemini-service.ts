@@ -41,14 +41,15 @@ Analyse les actualités fournies et génère un JSON en FRANÇAIS avec cette str
 
 RÈGLES IMPORTANTES:
 - Les scores (tension, volatility, risk) doivent être des NOMBRES décimaux entre 1.0 et 10.0
-- Utilise les clés EN ANGLAIS : "flash", "report", "alerts" (pas "rapport" ou "alertes")
+- Utilise les clés EN ANGLAIS : "flash", "report", "alerts"
 - Les champs "tension", "volatility", "risk" doivent être au premier niveau de "report"
 - Sois factuel, précis et professionnel. Cite toujours les sources.
 `;
 
 export async function generateAnalysis(newsContext: string) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    // UTILISER "gemini-pro" qui est le nom stable dans l'API v1beta
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const result = await model.generateContent([
       SYSTEM_PROMPT,
