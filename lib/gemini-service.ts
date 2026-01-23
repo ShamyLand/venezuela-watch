@@ -49,9 +49,10 @@ RÈGLES CRITIQUES:
 `;
 export async function generateAnalysis(newsContext: string) {
     try {
-        // CORRECTION CRITIQUE: gemini-1.5-pro est le modèle correct pour l'API v1beta
-        // gemini-pro et gemini-1.5-flash ne sont PAS supportés dans v1beta
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        // ✅ MODÈLE STABLE CONFIRMÉ: gemini-2.5-flash
+        // Documentation officielle: https://ai.google.dev/gemini-api/docs/models/gemini
+        // C'est le modèle stable avec le meilleur rapport qualité/prix (Janvier 2026)
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const result = await model.generateContent([
             SYSTEM_PROMPT,
             `Voici les dernières nouvelles sur le Venezuela provenant de flux RSS internationaux:\n\n${newsContext}`
