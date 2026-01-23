@@ -69,7 +69,12 @@ export async function generateAnalysis(newsContext: string) {
     ]);
 
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
+
+    console.log("Raw Gemini Output:", text);
+
+    // CLEANUP: Remove markdown code blocks if present (even with JSON mode, it happens)
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
     return JSON.parse(text);
   } catch (error) {
