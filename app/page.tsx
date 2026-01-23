@@ -21,6 +21,8 @@ import {
 import {
     LineChart,
     Line,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -216,7 +218,7 @@ export default function Dashboard() {
 
                         <div className="h-[280px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={displayOil}>
+                                <AreaChart data={displayOil}>
                                     <defs>
                                         <linearGradient id="brentGradient" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
@@ -235,9 +237,9 @@ export default function Dashboard() {
                                         labelStyle={{ color: '#00d4ff', fontWeight: 'bold', marginBottom: '4px' }}
                                         formatter={(value: any, name: string) => [`$${value}`, name === 'brent' ? 'Brent Crude' : 'WTI Crude']}
                                     />
-                                    <Line type="monotone" dataKey="brent" stroke="#00d4ff" strokeWidth={2} dot={false} fill="url(#brentGradient)" />
-                                    <Line type="monotone" dataKey="wti" stroke="#00ff88" strokeWidth={2} dot={false} fill="url(#wtiGradient)" />
-                                </LineChart>
+                                    <Area type="monotone" dataKey="brent" stroke="#00d4ff" strokeWidth={3} fill="url(#brentGradient)" />
+                                    <Area type="monotone" dataKey="wti" stroke="#00ff88" strokeWidth={3} fill="url(#wtiGradient)" />
+                                </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
@@ -410,18 +412,28 @@ export default function Dashboard() {
                         </h2>
                         <p className="text-[9px] text-[#8892a0] mb-4">Répartition par pays (% du volume total)</p>
 
-                        <div className="h-[150px] mb-4">
+                        <div className="h-[180px] mb-4">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={PDVSA_EXPORTS}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={60}
-                                        paddingAngle={5}
+                                        innerRadius={50}
+                                        outerRadius={75}
+                                        paddingAngle={3}
                                         dataKey="value"
-                                        label={({ name, value }) => `${value}%`}
+                                        label={({ cx, cy, midAngle, outerRadius, value }) => {
+                                            const RADIAN = Math.PI / 180;
+                                            const radius = outerRadius + 25;
+                                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                            return (
+                                                <text x={x} y={y} fill="#fff" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="14" fontWeight="bold">
+                                                    {value}%
+                                                </text>
+                                            );
+                                        }}
                                         labelLine={false}
                                     >
                                         {PDVSA_EXPORTS.map((entry, index) => (
@@ -467,7 +479,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* TIMELINE */}
-                    <div className="glass-card flex-1 flex flex-col">
+                    <div className="glass-card flex-1 flex flex-col lg:col-span-3">
                         <div className="p-4 border-b border-[#1a1f2e]">
                             <h2 className="text-xs uppercase font-bold tracking-widest font-mono flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-[#8892a0]" /> TIMELINE ÉVÉNEMENTS
