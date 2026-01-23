@@ -56,13 +56,16 @@ RÈGLES :
 
 export async function generateAnalysis(newsContext: string) {
   try {
+    console.log("🤖 Initializing Gemini model: gemini-2.5-flash");
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
       }
     });
 
+    console.log("📡 Sending request to Gemini API...");
     const result = await model.generateContent([
       SYSTEM_PROMPT,
       `Voici les dernières actualités à analyser :\n${newsContext}\n\nDate actuelle : ${new Date().toISOString()}`
@@ -71,14 +74,21 @@ export async function generateAnalysis(newsContext: string) {
     const response = await result.response;
     let text = response.text();
 
-    console.log("Raw Gemini Output:", text);
+    console.log("✅ Raw Gemini Output received:", text.substring(0, 200));
 
     // CLEANUP: Remove markdown code blocks if present (even with JSON mode, it happens)
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    console.log("✅ JSON parsed successfully");
+    return parsed;
   } catch (error) {
-    console.error("Gemini Analysis Failed:", error);
+    console.error("❌ Gemini Analysis Failed:", error);
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return null;
   }
 }
