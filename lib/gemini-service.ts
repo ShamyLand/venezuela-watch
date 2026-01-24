@@ -32,7 +32,7 @@ Analyse les articles fournis et génère un JSON complet en FRANÇAIS avec cette
         "date": "2026-01-23T14:30:00Z",
         "title": "Titre court de l'événement",
         "description": "Description courte",
-        "icon": "📢|🛢️|📉|🤝|📊"
+        "icon": "📢|🛢️|📉|🤝|📊|⚡|🌍|💰|🔥|⚠️"
       }
     ]
   },
@@ -46,20 +46,21 @@ Analyse les articles fournis et génère un JSON complet en FRANÇAIS avec cette
   ]
 }
 
-RÈGLES :
-- Scores entre 1.0 et 10.0
+RÈGLES CRITIQUES :
+- Les scores (tension, volatility, risk) sont des EXEMPLES - Tu DOIS générer des valeurs RÉELLES entre 1.0 et 10.0 basées sur l'analyse des articles
+- Les scores doivent refléter la vraie situation géopolitique actuelle du Venezuela
+- Dates timeline: Utilise les VRAIES dates mentionnées dans les articles (format ISO 8601)
+- Timeline : Extrais 10 à 15 événements majeurs avec leurs dates EXACTES
+- Icônes timeline : 📢🛢️📉🤝📊⚡🌍💰🔥⚠️
 - Base-toi UNIQUEMENT sur les articles fournis
-- Dates timeline au format ISO 8601
-- Timeline : Extrais 5 à 8 événements majeurs des articles
-- Icônes timeline : Choisis l'icône la plus pertinente
 `;
 
 export async function generateAnalysis(newsContext: string) {
   try {
-    console.log("🤖 Initializing Gemini model: gemini-2.5-flash");
+    console.log("🤖 Initializing Gemini model: gemini-3-flash-preview");
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       generationConfig: {
         responseMimeType: "application/json",
       }
