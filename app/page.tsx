@@ -5,6 +5,9 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import NewsTicker from "./components/NewsTicker";
+import SocialMediaFeed from "./components/SocialMediaFeed";
+import YouTubeVideos from "./components/YouTubeVideos";
 import {
     Globe,
     TrendingUp,
@@ -120,6 +123,8 @@ export default function Dashboard() {
 
     return (
         <div className="flex flex-col min-h-screen text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
+            {/* BREAKING NEWS TICKER */}
+            {analysis?.alerts && <NewsTicker alerts={analysis.alerts} />}
             {/* HEADER */}
             <header className="h-24 border-b border-[#00d4ff1a] bg-[#0d1526d9] backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
@@ -622,6 +627,16 @@ export default function Dashboard() {
                 </div>
 
             </main>
+
+            {/* SOCIAL MEDIA SECTION */}
+            <div className="px-4 md:px-6 max-w-[1600px] mx-auto w-full mb-6">
+                <SocialMediaFeed />
+            </div>
+
+            {/* YOUTUBE VIDEOS SECTION */}
+            <div className="px-4 md:px-6 max-w-[1600px] mx-auto w-full mb-6">
+                <YouTubeVideos />
+            </div>
 
             {/* NEWS MODAL */}
             {selectedNews && (
