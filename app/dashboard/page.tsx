@@ -19,7 +19,8 @@ import {
     History,
     ChevronRight,
     ExternalLink,
-    ChevronUp
+    ChevronUp,
+    FileDown
 } from "lucide-react";
 import {
     LineChart,
@@ -59,6 +60,7 @@ export default function Dashboard() {
     const [selectedNews, setSelectedNews] = useState<any>(null);
     const [timelineScrollPosition, setTimelineScrollPosition] = useState(0);
     const timelineRef = React.useRef<HTMLDivElement>(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     // Calculate time since last update
     const getTimeSinceUpdate = () => {
@@ -112,6 +114,41 @@ export default function Dashboard() {
         const risk = scores.risk || scores.indicateurs?.risque_sanctions || 0;
         return ((tension + volatility + risk) / 3).toFixed(1);
     };
+
+    // Handle PDF Export
+    const handleExportPDF = async () => {
+        setIsGeneratingPDF(true);
+        try {
+            // Dynamically import PDF service (client-side only)
+            const { generateVenezuelaPDF } = await import('@/lib/pdf-service');
+
+            // Fetch PDF summary data from API
+            const response = await fetch('/api/generate-pdf-summary', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Échec de génération de la synthèse PDF');
+            }
+
+            const pdfData = await response.json();
+
+            // Generate and download PDF
+            await generateVenezuelaPDF(pdfData);
+
+            // Success notification (could be enhanced with a toast library)
+            alert('✅ Rapport PDF généré avec succès !');
+        } catch (error) {
+            console.error('Erreur lors de la génération du PDF:', error);
+            alert('❌ Erreur lors de la génération du PDF. Veuillez réessayer.');
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
+
 
     // Helper to format fallback mock news if API fails
     const displayNews = news && news.length > 0 ? news : [
@@ -475,8 +512,25 @@ export default function Dashboard() {
                         <div className="p-4 border-t border-[#1a1f2e] bg-[#0d1526] flex justify-between items-center text-[10px] font-mono text-[#8892a0]">
                             <span>GÉNÉRATION PROCHAINE : 1H (CRON)</span>
                             <div className="flex gap-4">
-                                <button className="hover:text-white transition-colors underline flex items-center gap-1">
-                                    EXPORTER PDF <ExternalLink className="w-3 h-3" />
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={isGeneratingPDF}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded border transition-all ${isGeneratingPDF
+                                            ? 'bg-[#1a1f2e] border-[#00d4ff]/20 text-[#00d4ff]/50 cursor-wait'
+                                            : 'bg-[#00d4ff]/10 border-[#00d4ff]/40 text-[#00d4ff] hover:bg-[#00d4ff]/20 hover:border-[#00d4ff] hover:text-white cursor-pointer'
+                                        }`}
+                                >
+                                    {isGeneratingPDF ? (
+                                        <>
+                                            <Cpu className="w-4 h-4 animate-spin" />
+                                            <span className="font-bold">GÉNÉRATION EN COURS...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileDown className="w-4 h-4" />
+                                            <span className="font-bold">EXPORTER PDF</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
