@@ -1,90 +1,143 @@
 "use client";
 
-import React, { useState } from "react";
-import { Lock, Globe, ChevronRight } from "lucide-react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Shield, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState(false);
+    const router = useRouter();
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simplified logic for UI demonstration
-        if (password === "VNZ2026") {
-            window.location.href = "/";
-        } else {
-            setError(true);
-            setTimeout(() => setError(false), 2000);
+        setError('');
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to dashboard
+                router.push('/dashboard');
+                router.refresh();
+            } else {
+                setError('Mot de passe incorrect');
+                setPassword('');
+            }
+        } catch (err) {
+            setError('Erreur de connexion');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0e17] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Decorative Elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#00d4ff]/5 rounded-full blur-[120px]"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#ff6b35]/5 rounded-full blur-[120px]"></div>
+        <div className="min-h-screen bg-gradient-to-br from-[#0a0e17] via-[#0d1526] to-[#0a0e17] flex items-center justify-center p-4">
+            {/* Background Effects */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00d4ff]/5 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00ff88]/5 rounded-full blur-3xl"></div>
+            </div>
 
             {/* Login Card */}
-            <div className="w-full max-w-md glass-card p-8 relative z-10 border-t-2 border-[#00d4ff]/30">
-                <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 bg-[#00d4ff]/10 rounded-xl flex items-center justify-center border border-[#00d4ff]/30 mb-4 animate-pulse">
-                        <Globe className="w-10 h-10 text-[#00d4ff]" />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tighter terminal-text">VENEZUELA WATCH</h1>
-                    <p className="text-[10px] text-[#8892a0] uppercase tracking-widest font-mono mt-1">Strategic Intelligence Gateway</p>
-                </div>
+            <div className="relative w-full max-w-md">
+                {/* Glow Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-[#00d4ff] via-[#00ff88] to-[#00d4ff] rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-mono text-[#8892a0] uppercase tracking-wider ml-1">Code d'accès sécurisé</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className={`w-4 h-4 transition-colors ${error ? 'text-[#ff3b3b]' : 'text-[#8892a0] group-focus-within:text-[#00d4ff]'}`} />
-                            </div>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className={`w-full bg-[#0d1526] border ${error ? 'border-[#ff3b3b] shadow-[0_0_10px_rgba(255,59,59,0.2)]' : 'border-[#1a1f2e] focus:border-[#00d4ff] shadow-inner'} rounded px-10 py-3 text-sm transition-all outline-none terminal-text placeholder:text-[#4a5568]`}
-                                placeholder="••••••••••••"
-                                required
-                            />
+                <div className="relative bg-[#0d1526]/90 backdrop-blur-xl border border-[#00d4ff]/20 rounded-2xl p-8 shadow-2xl">
+                    {/* Logo/Header */}
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#00d4ff] to-[#00ff88] rounded-xl mb-4 shadow-lg shadow-[#00d4ff]/30">
+                            <Shield className="w-8 h-8 text-[#0a0e17]" />
                         </div>
+                        <h1 className="text-2xl font-black uppercase tracking-wider text-white mb-2">
+                            Venezuela Watch
+                        </h1>
+                        <p className="text-sm text-[#8892a0] font-mono">
+                            MSIE49 - Système de Veille Géopolitique
+                        </p>
+                    </div>
+
+                    {/* Login Form */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Password Input */}
+                        <div>
+                            <label htmlFor="password" className="block text-xs uppercase font-bold text-[#8892a0] mb-2 tracking-wider">
+                                <Lock className="w-3 h-3 inline mr-1" />
+                                Mot de Passe
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-[#0a0e17] border border-[#1a1f2e] rounded-lg px-4 py-3 text-white placeholder-[#4a5568] focus:outline-none focus:border-[#00d4ff] focus:ring-2 focus:ring-[#00d4ff]/20 transition-all"
+                                    placeholder="Entrez votre mot de passe"
+                                    required
+                                    autoFocus
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8892a0] hover:text-[#00d4ff] transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Error Message */}
                         {error && (
-                            <p className="text-[10px] text-[#ff3b3b] font-mono mt-2 animate-bounce flex items-center gap-1 leading-none">
-                                <span className="w-1 h-3 bg-[#ff3b3b]"></span> CODE D'ACCÈS INVALIDE. VEUILLEZ RÉESSAYER.
-                            </p>
+                            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <span>{error}</span>
+                            </div>
                         )}
-                    </div>
 
-                    <button
-                        type="submit"
-                        className="w-full bg-[#00d4ff] hover:bg-[#00b8e6] text-[#0a0e17] font-bold py-3 rounded flex items-center justify-center gap-2 group transition-all transform active:scale-[0.98] relative overflow-hidden"
-                    >
-                        <span className="relative z-10 uppercase text-xs tracking-widest flex items-center gap-2">
-                            Accéder au Dashboard <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </span>
-                        <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-[-20deg]"></div>
-                    </button>
-                </form>
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={loading || !password}
+                            className="w-full bg-gradient-to-r from-[#00d4ff] to-[#00ff88] text-[#0a0e17] font-black uppercase tracking-wider py-3 rounded-lg hover:shadow-lg hover:shadow-[#00d4ff]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 border-2 border-[#0a0e17]/30 border-t-[#0a0e17] rounded-full animate-spin"></div>
+                                    Connexion...
+                                </span>
+                            ) : (
+                                'Accéder au Dashboard'
+                            )}
+                        </button>
+                    </form>
 
-                <div className="mt-8 pt-8 border-t border-[#1a1f2e] grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                        <span className="block text-[8px] text-[#4a5568] uppercase font-mono mb-1">Status Système</span>
-                        <span className="text-[9px] text-[#00ff88] font-mono flex items-center justify-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-[#00ff88]"></span> ONLINE
-                        </span>
-                    </div>
-                    <div className="text-center">
-                        <span className="block text-[8px] text-[#4a5568] uppercase font-mono mb-1">Sécurité</span>
-                        <span className="text-[9px] text-[#00d4ff] font-mono">TLS 1.3 / AES-256</span>
+                    {/* Footer */}
+                    <div className="mt-8 pt-6 border-t border-[#1a1f2e] text-center">
+                        <p className="text-[10px] text-[#4a5568] font-mono">
+                            🔒 Connexion sécurisée • Accès restreint
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <p className="mt-8 text-[10px] text-[#4a5568] font-mono uppercase tracking-[0.2em] animate-pulse">
-                Waiting for authentication...
-            </p>
+            {/* Decorative Elements */}
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-[#4a5568] font-mono">
+                MSIE49 © 2026 • Tous droits réservés
+            </div>
         </div>
     );
 }
