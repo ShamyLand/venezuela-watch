@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINI_API_KEY!;
@@ -90,9 +90,6 @@ export async function POST(request: NextRequest) {
   try {
     console.log("📊 Starting PDF summary generation...");
 
-    // Créer le client Supabase
-    const supabase = createClient();
-
     // 1. Récupérer les données des dernières 48h
     const twoDaysAgo = new Date();
     twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
@@ -153,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     const response = await result.response;
     let aiSummary = response.text();
-    
+
     // Nettoyage du JSON
     aiSummary = aiSummary.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsedSummary = JSON.parse(aiSummary);
@@ -184,7 +181,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("❌ PDF Summary Generation Failed:", error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to generate PDF summary',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
