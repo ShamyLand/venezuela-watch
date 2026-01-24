@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fetchNews } from '@/lib/news-service';
 import { generateAnalysis } from '@/lib/gemini-service';
+import { fetchOilPrices } from '@/lib/oil-service';
 import { supabase } from '@/lib/supabase';
 
 // FORCE DYNAMIC: This route must not be cached, it runs on demand/schedule
@@ -8,14 +9,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     try {
-        console.log("🚀 Starting RSS + Gemini Analysis Job...");
+        console.log("🚀 Starting RSS + Gemini + Oil Prices Analysis Job...");
 
         // 1. Fetch News from RSS Feeds (7 sources)
         console.log("📡 Fetching from RSS feeds...");
         const articles = await fetchNews();
         console.log(`✅ Retrieved ${articles.length} articles from RSS`);
 
-        // 2. Store News in Database
+        // 2. Fetch Oil Prices
+        console.log("🛢️ Fetching oil prices...");
+        const oilData = await fetchOilPrices();
+        console.log(`✅ Oil prices: Brent $${oilData.brent?.price}, WTI $${oilData.wti?.price}`);
+
+        // 3. Store News in Database
         if (articles.length > 0) {
             console.log("💾 Storing RSS articles...");
 
@@ -39,7 +45,30 @@ export async function GET(request: Request) {
             }
         }
 
-        // 3. Generate AI Analysis from RSS articles
+        // 4. Store Oil Prices in Database
+        if (oilData.brent && oilData.wti) {
+            console.log("💾 Storing oil prices...");
+
+            const { error: oilError } = await supabase
+                .from('oil_prices')
+                .insert({
+                    brent_price: oilData.brent.price,
+                    brent_change: oilData.brent.change,
+                    brent_change_percent: oilData.brent.changePercent,
+                    wti_price: oilData.wti.price,
+                    wti_change: oilData.wti.change,
+                    wti_change_percent: oilData.wti.changePercent,
+                    timestamp: new Date().toISOString()
+                });
+
+            if (oilError) {
+                console.warn("⚠️ Oil prices couldn't be stored:", oilError.message);
+            } else {
+                console.log("✅ Oil prices stored");
+            }
+        }
+
+        // 5. Generate AI Analysis from RSS articles
         console.log("🤖 Generating Gemini analysis from RSS data...");
 
         const newsContext = JSON.stringify({
@@ -61,14 +90,15 @@ export async function GET(request: Request) {
 
         console.log("✅ Gemini analysis generated successfully!");
 
-        // 4. Store Analysis
+        // 6. Store Analysis
         console.log("💾 Storing analysis...");
         const { error: analysisError } = await supabase
             .from('analyses')
             .insert({
                 flash_json: analysis.flash,
                 report_json: analysis.report,
-                alerts_json: analysis.alerts
+                alerts_json: analysis.alerts,
+                timestamp: new Date().toISOString()
             });
 
         if (analysisError) {
@@ -80,9 +110,13 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             success: true,
-            message: "RSS + Gemini analysis completed",
+            message: "RSS + Oil + Gemini analysis completed",
             data: {
                 articles_processed: articles.length,
+                oil_prices: {
+                    brent: oilData.brent?.price,
+                    wti: oilData.wti?.price
+                },
                 analysis_timestamp: new Date().toISOString()
             }
         });
