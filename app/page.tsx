@@ -493,15 +493,15 @@ export default function Dashboard() {
                         </h2>
                         <p className="text-[9px] text-[#8892a0] mb-4">Répartition par pays (% du volume total)</p>
 
-                        <div className="h-[180px] mb-4">
+                        <div className="h-[220px] mb-4 px-2">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={PDVSA_EXPORTS}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={75}
+                                        innerRadius={55}
+                                        outerRadius={70}
                                         paddingAngle={3}
                                         dataKey="value"
                                         label={({ cx, cy, midAngle, outerRadius, value }) => {
@@ -561,7 +561,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* TIMELINE - FULL WIDTH BOTTOM ROW - REAL AI DATA */}
-                <div className="lg:col-span-12 glass-card flex flex-col">
+                <div className="lg:col-span-12 glass-card flex flex-col overflow-visible">
                     <div className="p-4 border-b border-[#1a1f2e] flex items-center justify-between">
                         <h2 className="text-xs uppercase font-bold tracking-widest font-mono flex items-center gap-2">
                             <Clock className="w-4 h-4 text-[#8892a0]" /> TIMELINE ÉVÉNEMENTS
@@ -583,7 +583,7 @@ export default function Dashboard() {
                             </button>
                         </div>
                     </div>
-                    <div ref={timelineRef} className="flex-1 overflow-x-auto p-4 custom-scrollbar">
+                    <div ref={timelineRef} className="flex-1 overflow-x-auto p-4 pt-20 custom-scrollbar">
                         <div className="flex gap-4 pb-4 min-w-max relative">
                             {/* Ligne horizontale de connexion */}
                             <div className="absolute top-8 left-0 right-0 h-px bg-[#1a1f2e]"></div>
@@ -615,7 +615,7 @@ export default function Dashboard() {
                                             </div>
 
                                             {/* Hover tooltip */}
-                                            <div className="hidden group-hover:block absolute top-0 left-0 -mt-16 w-48 p-2 bg-[#0d1526] border border-[#00d4ff] rounded text-[10px] text-[#e8e8e8] z-20 shadow-xl pointer-events-none">
+                                            <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 bg-[#0d1526] border-2 border-[#00d4ff] rounded-lg text-[11px] text-[#e8e8e8] z-50 shadow-2xl pointer-events-none">
                                                 {ev.description}
                                             </div>
                                         </div>
