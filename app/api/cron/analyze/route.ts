@@ -30,8 +30,7 @@ export async function GET(request: Request) {
                 title_fr: article.title,
                 url: article.url,
                 published_at: article.published_at,
-                source_name: article.source_name,
-                language: article.language || 'en'
+                source_name: article.source_name
             }));
 
             // Use upsert to handle duplicate URLs gracefully
