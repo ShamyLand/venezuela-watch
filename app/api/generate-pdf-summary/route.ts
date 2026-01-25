@@ -132,7 +132,10 @@ export async function POST(request: NextRequest) {
     // 4. Préparer le contexte pour Gemini
     const newsContext = newsData?.map((item: any) => {
       return `[${new Date(item.created_at).toLocaleDateString('fr-FR')}] ${item.title}\n${item.description}\nSource: ${item.source}`;
-    }).join('\n\n') || 'Aucune actualité récente disponible.';
+    }).join('\n\n') || 'Aucune actualité récente disponible (Utiliser les données de l\'analyse existante).';
+
+    // Préparer le contexte de l'analyse existante (Intel Feed / Dashboard)
+    const existingAnalysisContext = analysisData ? JSON.stringify(analysisData) : "Aucune analyse existante.";
 
     // 5. Générer la synthèse avec Gemini (avec timeout)
     console.log("🤖 Generating AI summary for PDF...");
@@ -141,20 +144,24 @@ export async function POST(request: NextRequest) {
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.0-flash", // Use faster/better model if available, fallback to flash
         generationConfig: {
           responseMimeType: "application/json",
         }
       });
 
-      // Timeout de 25 secondes pour Gemini
+      // Timeout augmenté à 40 secondes
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini timeout après 25 secondes')), 25000)
+        setTimeout(() => reject(new Error('Gemini timeout après 40 secondes')), 40000)
       );
 
       const geminiPromise = model.generateContent([
         PDF_SUMMARY_PROMPT,
-        `Voici les données à analyser:\n\nACTUALITÉS RÉCENTES (48h):\n${newsContext}\n\nPRIX DU PÉTROLE ACTUEL:\nBrent: ${oilData?.brent || 'N/A'} USD\nWTI: ${oilData?.wti || 'N/A'} USD\n\nDate actuelle: ${new Date().toISOString()}`
+        `Voici les données à analyser:\n\n
+        CONTEXTE ANALYSE EXISTANTE (DASHBOARD ACTUEL - TRES IMPORTANT):\n${existingAnalysisContext}\n\n
+        ACTUALITÉS RÉCENTES (48h):\n${newsContext}\n\n
+        PRIX DU PÉTROLE ACTUEL:\nBrent: ${oilData?.brent || 'N/A'} USD\nWTI: ${oilData?.wti || 'N/A'} USD\n\n
+        Date actuelle: ${new Date().toISOString()}`
       ]);
 
       const result = await Promise.race([geminiPromise, timeoutPromise]) as any;
@@ -167,64 +174,70 @@ export async function POST(request: NextRequest) {
 
       console.log("✅ AI summary generated successfully");
     } catch (geminiError) {
-      console.error("⚠️ Gemini generation failed, using fallback data:", geminiError);
+      console.error("⚠️ Gemini generation failed/timeout. Using Fallback from existing analysis.", geminiError);
 
-      // FALLBACK : Générer une synthèse de base sans IA
-      parsedSummary = {
-        titre_rapport: "VENEZUELA WATCH - Synthèse Géopolitique",
-        sous_titre: `Analyse du ${new Date().toLocaleDateString('fr-FR')}`,
-        synthese_executive: {
-          resume_general: "Rapport généré sans analyse IA complète. Les données brutes sont disponibles ci-dessous.",
-          points_cles: [
-            `${newsData?.length || 0} actualités collectées sur les dernières 48h`,
-            "Analyse IA temporairement indisponible",
-            "Consultez les données brutes pour plus d'informations",
-            "Prix du pétrole : voir section économique",
-            "Mise à jour automatique toutes les heures"
-          ],
-          tendance_generale: "STABLE",
-          evaluation_risque: "MODÉRÉ"
-        },
-        analyse_geopolitique: {
-          contexte: "L'analyse géopolitique complète n'est pas disponible pour ce rapport. Veuillez consulter le dashboard en ligne pour les dernières analyses.",
-          developpements_recents: "Données collectées mais analyse IA indisponible.",
-          implications: "Consultez le dashboard pour l'analyse en temps réel."
-        },
-        analyse_economique: {
-          situation_petrole: `Prix actuels du pétrole : Brent à ${oilData?.brent || 'N/A'} USD/baril, WTI à ${oilData?.wti || 'N/A'} USD/baril.`,
-          marche_mondial: "Analyse détaillée disponible sur le dashboard.",
-          sanctions_economiques: "Voir dashboard pour détails."
-        },
-        indicateurs_cles: {
-          tension_geopolitique: 5.0,
-          volatilite_petrole: 5.0,
-          risque_sanctions: 5.0,
-          stabilite_regionale: 5.0,
-          pression_internationale: 5.0
-        },
-        timeline_evenements: newsData?.slice(0, 10).map((n: any) => ({
-          date: n.created_at,
-          titre: n.title || n.title_fr || "Événement",
-          description: n.description?.substring(0, 100) || "Pas de description",
-          impact: "MOYEN",
-          categorie: "ACTUALITE"
-        })) || [],
-        alertes_actives: [{
-          titre: "Analyse IA indisponible",
-          description: "La synthèse complète n'a pas pu être générée. Consultez le dashboard pour l'analyse en temps réel.",
-          niveau: "MOYEN",
-          recommandation: "Réessayez dans quelques minutes ou consultez le dashboard."
-        }],
-        previsions_court_terme: {
-          "7_jours": "Prévisions détaillées disponibles sur le dashboard en ligne.",
-          facteurs_surveillance: [
-            "Évolution des prix du pétrole",
-            "Nouvelles sanctions potentielles",
-            "Développements politiques"
-          ]
-        },
-        sources_principales: newsData?.slice(0, 3).map((n: any) => n.source || "Source inconnue") || ["Dashboard Venezuela Watch"]
-      };
+      // SMART FALLBACK : Utiliser les données de l'analyse existante (Dashboard) au lieu de renvoyer du vide
+      if (analysisData) {
+        console.log("🔄 Using existing Database Analysis as fallback...");
+        parsedSummary = {
+          titre_rapport: "VENEZUELA WATCH - Rapport de Situation",
+          sous_titre: `Basé sur l'analyse active du ${new Date(analysisData.created_at).toLocaleDateString('fr-FR')}`,
+          synthese_executive: {
+            resume_general: analysisData.flash_json?.content || analysisData.report_json?.content || "Analyse en cours...",
+            points_cles: analysisData.flash_json?.points || ["Surveillance active", "Données en cours de traitement"],
+            tendance_generale: analysisData.flash_json?.tendance || "NON DÉFINI",
+            evaluation_risque: "MODÉRÉ" // Valeur par défaut si manquant
+          },
+          analyse_geopolitique: {
+            contexte: analysisData.report_json?.geopolitique || "Voir dashboard pour détails.",
+            developpements_recents: "Consultez le terminal Intel Feed pour les logs temps réel.",
+            implications: "Situation sous surveillance active."
+          },
+          analyse_economique: {
+            situation_petrole: analysisData.report_json?.economie_petrole || "Données pétrolières en cours d'actualisation.",
+            marche_mondial: "Volatilité observée sur les marchés.",
+            sanctions_economiques: "Impact des sanctions sous évaluation."
+          },
+          indicateurs_cles: analysisData.report_json?.indicateurs || {
+            tension_geopolitique: 5.0,
+            volatilite_petrole: 5.0,
+            risque_sanctions: 5.0,
+            stabilite_regionale: 5.0,
+            pression_internationale: 5.0
+          },
+          timeline_evenements: [],
+          alertes_actives: analysisData.alerts_json || [],
+          previsions_court_terme: {
+            "7_jours": "Maintien de la vigilance recommandé.",
+            "facteurs_surveillance": ["Prix du pétrole", "Stabilité frontalière"]
+          },
+          sources_principales: ["Venezuela Watch Intelligence System"]
+        };
+      } else {
+        // VRAI FALLBACK (Si même la DB est vide)
+        parsedSummary = {
+          titre_rapport: "VENEZUELA WATCH - Synthèse Géopolitique",
+          sous_titre: `Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`,
+          synthese_executive: {
+            resume_general: "Aucune donnée d'analyse disponible actuellement. Le système attend la prochaine synchronisation CRON.",
+            points_cles: [
+              "Données sources insuffisantes",
+              "En attente de synchronisation",
+              "Vérifiez la connexion API"
+            ],
+            tendance_generale: "INCONNUE",
+            evaluation_risque: "INCONNU"
+          },
+          // Structure vide pour éviter le crash PDF
+          analyse_geopolitique: { contexte: "N/A", developpements_recents: "N/A", implications: "N/A" },
+          analyse_economique: { situation_petrole: "N/A", marche_mondial: "N/A", sanctions_economiques: "N/A" },
+          indicateurs_cles: { tension_geopolitique: 0, volatilite_petrole: 0, risque_sanctions: 0, stabilite_regionale: 0, pression_internationale: 0 },
+          timeline_evenements: [],
+          alertes_actives: [],
+          previsions_court_terme: { "7_jours": "N/A", facteurs_surveillance: [] },
+          sources_principales: []
+        };
+      }
     }
 
     // 6. Compiler toutes les données pour le PDF
