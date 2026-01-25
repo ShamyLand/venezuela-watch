@@ -349,9 +349,29 @@ export default function Dashboard() {
                                                 LOC: {log.location || 'UNKNOWN'}
                                             </span>
                                         </div>
-                                        <p className="text-[#e0e0e0] leading-relaxed uppercase tracking-wide text-[11px] group-hover/log:text-white transition-colors cursor-text selection:bg-[#00ff88]/30">
+                                        <p className="text-[#e0e0e0] leading-relaxed uppercase tracking-wide text-[11px] group-hover/log:text-white transition-colors cursor-text selection:bg-[#00ff88]/30 font-bold">
                                             {log.message}
                                         </p>
+
+                                        {/* Civilian Explanation & Source */}
+                                        <div className="mt-1.5 flex flex-col gap-1 opacity-60 group-hover/log:opacity-100 transition-opacity">
+                                            {(log.civilian_explanation || log.source_analysis) && (
+                                                <>
+                                                    {log.civilian_explanation && (
+                                                        <div className="flex items-start gap-1.5 text-[10px] text-[#00d4ff] italic">
+                                                            <span className="shrink-0">ℹ️</span>
+                                                            <span>"{log.civilian_explanation}"</span>
+                                                        </div>
+                                                    )}
+                                                    {log.source_analysis && (
+                                                        <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-mono pl-1 border-l border-white/10 ml-0.5">
+                                                            <span className="shrink-0 uppercase tracking-wider text-[8px]">SOURCE:</span>
+                                                            <span>{log.source_analysis}</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}

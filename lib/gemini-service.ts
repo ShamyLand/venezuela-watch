@@ -19,12 +19,12 @@ Analyse les articles fournis et génère un JSON complet en FRANÇAIS avec cette
         "type": "SIGINT|HUMINT|SAT|OSINT|CYBER",
         "message": "Message court style télétype militaire (ex: MOUVEMENTS TROUPES FRONT. COLOMBIE)",
         "location": "CARACAS|BORDER|SEA|ORINOCO|MIRAFLORES",
-        "timestamp": "HH:MM"
+        "timestamp": "HH:MM",
+        "source_analysis": "Explique brièvement sur quelle donnée réelle tu te bases (ex: 'Basé sur la hausse brutale du WTI + rumeurs Twitter')",
+        "civilian_explanation": "Traduction en langage civil (ex: 'Préparation probable d'une action militaire ou renforcement de sécurité')"
       },
-      { "type": "SAT", "message": "Message 2...", "location": "SEA", "timestamp": "HH:MM" },
-      { "type": "HUMINT", "message": "Message 3...", "location": "CARACAS", "timestamp": "HH:MM" },
-      { "type": "OSINT", "message": "Message 4...", "location": "BORDER", "timestamp": "HH:MM" },
-      { "type": "SIGINT", "message": "Message 5...", "location": "MIRAFLORES", "timestamp": "HH:MM" }
+      { "type": "SAT", "message": "...", "location": "...", "timestamp": "...", "source_analysis": "...", "civilian_explanation": "..." },
+      { "type": "HUMINT", "message": "...", "location": "...", "timestamp": "...", "source_analysis": "...", "civilian_explanation": "..." }
     ]
   },
   "report": {
