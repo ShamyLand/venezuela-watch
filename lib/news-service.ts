@@ -240,29 +240,32 @@ export async function fetchNews(): Promise<NewsArticle[]> {
 }
 
 function getMockArticles(): NewsArticle[] {
+    const now = new Date();
+    const timeString = now.getTime();
+
     return [
         {
             title: "Venezuela economic situation remains uncertain",
-            url: "https://reuters.com/mock-1",
-            published_at: new Date().toISOString(),
+            url: `https://reuters.com/mock-1-${timeString}`,
+            published_at: now.toISOString(),
             source_name: "Reuters",
-            summary: "Mock article for testing purposes",
+            summary: "Mock article for testing purposes (System fallback)",
             language: "en"
         },
         {
             title: "PDVSA oil production figures released",
-            url: "https://bloomberg.com/mock-2",
-            published_at: new Date().toISOString(),
+            url: `https://bloomberg.com/mock-2-${timeString}`,
+            published_at: now.toISOString(),
             source_name: "Bloomberg",
-            summary: "Mock article for testing purposes",
+            summary: "Mock article for testing purposes (System fallback)",
             language: "en"
         },
         {
             title: "International community discusses Venezuela sanctions",
-            url: "https://bbc.com/mock-3",
-            published_at: new Date().toISOString(),
+            url: `https://bbc.com/mock-3-${timeString}`,
+            published_at: now.toISOString(),
             source_name: "BBC News",
-            summary: "Mock article for testing purposes",
+            summary: "Mock article for testing purposes (System fallback)",
             language: "en"
         }
     ];
