@@ -34,14 +34,21 @@ export async function GET(request: Request) {
                 language: article.language || 'en'
             }));
 
-            const { error: newsError } = await supabase
+            // Use upsert to handle duplicate URLs gracefully
+            const { data: insertedData, error: newsError } = await supabase
                 .from('news')
-                .insert(newsToInsert);
+                .upsert(newsToInsert, {
+                    onConflict: 'url',
+                    ignoreDuplicates: true
+                })
+                .select();
 
             if (newsError) {
-                console.warn("⚠️ Some RSS articles couldn't be stored:", newsError.message);
+                console.error("❌ Error storing RSS articles:", newsError.message);
             } else {
-                console.log(`✅ ${newsToInsert.length} RSS articles stored`);
+                const insertedCount = insertedData?.length || 0;
+                const duplicatesCount = newsToInsert.length - insertedCount;
+                console.log(`✅ ${insertedCount} new articles inserted (${duplicatesCount} duplicates ignored)`);
             }
         }
 
@@ -49,22 +56,32 @@ export async function GET(request: Request) {
         if (oilData.brent && oilData.wti) {
             console.log("💾 Storing oil prices...");
 
+            const timestamp = new Date().toISOString();
+
+            // Insert Brent and WTI as separate rows (matching schema)
+            const oilPricesToInsert = [
+                {
+                    symbol: 'BRENT',
+                    price: oilData.brent.price,
+                    change_percent: oilData.brent.changePercent,
+                    timestamp: timestamp
+                },
+                {
+                    symbol: 'WTI',
+                    price: oilData.wti.price,
+                    change_percent: oilData.wti.changePercent,
+                    timestamp: timestamp
+                }
+            ];
+
             const { error: oilError } = await supabase
                 .from('oil_prices')
-                .insert({
-                    brent_price: oilData.brent.price,
-                    brent_change: oilData.brent.change,
-                    brent_change_percent: oilData.brent.changePercent,
-                    wti_price: oilData.wti.price,
-                    wti_change: oilData.wti.change,
-                    wti_change_percent: oilData.wti.changePercent,
-                    timestamp: new Date().toISOString()
-                });
+                .insert(oilPricesToInsert);
 
             if (oilError) {
-                console.warn("⚠️ Oil prices couldn't be stored:", oilError.message);
+                console.error("❌ Error storing oil prices:", oilError.message);
             } else {
-                console.log("✅ Oil prices stored");
+                console.log("✅ Oil prices stored (Brent & WTI)");
             }
         }
 
