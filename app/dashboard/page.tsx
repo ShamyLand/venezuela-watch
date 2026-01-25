@@ -309,48 +309,59 @@ export default function Dashboard() {
                 {/* LEFT COLUMN - NEWS & OIL */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
 
-                    {/* WIDGET 1: NEWS FEED */}
-                    <div className="glass-card flex flex-col h-[500px]">
-                        <div className="p-5 bg-black/20 border-b border-white/5 flex items-center justify-between">
-                            <h2 className="text-xs font-black uppercase tracking-widest terminal-text italic flex items-center gap-2">
-                                📰 Flux News Direct
+                    {/* WIDGET 1: INTEL FEED TERMINAL */}
+                    <div className="glass-card flex flex-col h-[500px] border border-[#00ff88]/20 bg-black/40 relative overflow-hidden group">
+                        {/* Scanline effect */}
+                        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 bg-[length:100%_2px,3px_100%] opacity-20"></div>
+
+                        <div className="p-4 bg-black/40 border-b border-[#00ff88]/20 flex items-center justify-between relative z-20">
+                            <h2 className="text-xs font-black uppercase tracking-widest text-[#00ff88] flex items-center gap-2 font-mono">
+                                <span className="w-2 h-2 bg-[#00ff88] rounded-full animate-pulse"></span>
+                                FLUX RENSEIGNEMENTS <span className="text-white/30">//</span> <span className="text-white/50">INTEL_FEED_V2</span>
                             </h2>
-                            <span className="text-[10px] text-[#00ff88] font-mono animate-terminal-blink">LIVE</span>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[9px] font-mono text-[#00ff88]/50">ENCTE: AES-256</span>
+                                <span className="text-[10px] text-[#00ff88] font-mono animate-terminal-blink bg-[#00ff88]/10 px-2 py-0.5 rounded">LIVE</span>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                            {displayNews.map((n: any, i: number) => {
-                                const newsDate = new Date(n.published_at);
-                                const formattedDate = newsDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                const formattedTime = newsDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-                                // Use real URL if available, fallback to Google Search only if missing
-                                const hasRealUrl = n.url && n.url.startsWith('http');
-                                const linkUrl = hasRealUrl ? n.url : `https://www.google.com/search?q=${encodeURIComponent(n.title_fr || n.title)}`;
-                                const linkText = hasRealUrl ? 'Lire l\'article' : 'Rechercher sur Google';
-                                const linkIcon = hasRealUrl ? 'text-[#00ff88]' : 'text-[#00d4ff]';
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar font-mono text-xs relative z-20">
+                            {/* Fallback msg if no intel feed */}
+                            {(!analysis?.flash?.intel_feed || analysis.flash.intel_feed.length === 0) && (
+                                <div className="text-center mt-20 opacity-50 space-y-2">
+                                    <div className="animate-spin text-[#00ff88] mb-2 mx-auto w-6 h-6 border-2 border-[#00ff88] border-t-transparent rounded-full"></div>
+                                    <p className="text-[#00ff88]">ATTENTE LIAISON SATELLITE...</p>
+                                    <p className="text-[10px] text-white/40">SYNCHRONISATION EN COURS</p>
+                                </div>
+                            )}
 
+                            {/* Intel Logs Display */}
+                            {analysis?.flash?.intel_feed?.map((log: any, i: number) => {
+                                const isCritical = ['SIGINT', 'HUMINT', 'CYBER'].includes(log.type);
                                 return (
-                                    <div
-                                        key={i}
-                                        onClick={() => window.open(linkUrl, '_blank')}
-                                        className="news-item-antigravity block p-4 rounded-xl border border-transparent hover:border-[#00d4ff4d] hover:scale-[1.02] transition-all cursor-pointer"
-                                    >
-                                        <div className="flex justify-between items-start mb-2 text-[10px]">
-                                            <span className="text-[#00d4ff] font-bold font-mono">
-                                                {n.source_name || n.source} • {formattedDate} à {formattedTime}
+                                    <div key={i} className="group/log border-l-2 border-[#00ff88]/20 pl-3 py-1 hover:border-[#00ff88] hover:bg-[#00ff88]/5 transition-all duration-300">
+                                        <div className="flex items-center gap-2 mb-1 opacity-70 group-hover/log:opacity-100">
+                                            <span className="text-[10px] text-[#00ff88] opacity-60">[{log.timestamp || '14:00'}]</span>
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isCritical ? 'bg-red-500/20 text-red-400' : 'bg-[#00ff88]/10 text-[#00ff88]'}`}>
+                                                {log.type || 'SYSTEM'}
                                             </span>
-                                            <span className="px-2 py-0.5 bg-[#1a1f2e] text-[#ccc] rounded border border-white/10 text-[9px]">{n.category || 'Actualité'}</span>
+                                            <span className="text-[9px] text-white/40 tracking-wider">
+                                                LOC: {log.location || 'UNKNOWN'}
+                                            </span>
                                         </div>
-                                        <h3 className="text-[13px] font-semibold leading-snug line-clamp-2">
-                                            {n.title_fr || n.title}
-                                        </h3>
-                                        <div className={`mt-2 flex items-center gap-1 text-[9px] ${linkIcon}`}>
-                                            <ExternalLink className="w-3 h-3" />
-                                            <span>{linkText}</span>
-                                        </div>
+                                        <p className="text-[#e0e0e0] leading-relaxed uppercase tracking-wide text-[11px] group-hover/log:text-white transition-colors cursor-text selection:bg-[#00ff88]/30">
+                                            {log.message}
+                                        </p>
                                     </div>
                                 );
                             })}
+
+                            {/* Decorative terminal footer */}
+                            {analysis?.flash?.intel_feed?.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-dashed border-[#00ff88]/20 text-[9px] text-white/30 text-center animate-pulse">
+                                    /// FIN DE TRANSMISSION - CANAL SÉCURISÉ ///
+                                </div>
+                            )}
                         </div>
                     </div>
 

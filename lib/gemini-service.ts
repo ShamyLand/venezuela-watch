@@ -13,7 +13,19 @@ Analyse les articles fournis et génère un JSON complet en FRANÇAIS avec cette
     "content": "Une phrase d'impact courte résumant la situation actuelle",
     "points": ["Point clé 1", "Point clé 2", "Point clé 3", "Point clé 4", "Point clé 5"],
     "tendance": "HAUSSIÈRE|BAISSIÈRE|STABLE",
-    "tendance_label": "Phrase courte expliquant la tendance"
+    "tendance_label": "Phrase courte expliquant la tendance",
+    "intel_feed": [
+      {
+        "type": "SIGINT|HUMINT|SAT|OSINT|CYBER",
+        "message": "Message court style télétype militaire (ex: MOUVEMENTS TROUPES FRONT. COLOMBIE)",
+        "location": "CARACAS|BORDER|SEA|ORINOCO|MIRAFLORES",
+        "timestamp": "HH:MM"
+      },
+      { "type": "SAT", "message": "Message 2...", "location": "SEA", "timestamp": "HH:MM" },
+      { "type": "HUMINT", "message": "Message 3...", "location": "CARACAS", "timestamp": "HH:MM" },
+      { "type": "OSINT", "message": "Message 4...", "location": "BORDER", "timestamp": "HH:MM" },
+      { "type": "SIGINT", "message": "Message 5...", "location": "MIRAFLORES", "timestamp": "HH:MM" }
+    ]
   },
   "report": {
     "tension": 7.5,
