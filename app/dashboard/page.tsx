@@ -273,93 +273,151 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">BRENT CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">$81.24</span>
-                                    <span className="text-[10px] text-[#00ff88] flex items-center mb-1 font-mono">
-                                        <ChevronUp className="w-3 h-3" /> 1.2%
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">WTI CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">$77.30</span>
-                                    <span className="text-[10px] text-[#00ff88] flex items-center mb-1 font-mono">
-                                        <ChevronUp className="w-3 h-3" /> 0.8%
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        {(() => {
+                            // Extract latest and 7-day trend data from oilPrices
+                            const latestOil = oilPrices && oilPrices.length > 0 ? oilPrices[0] : null;
+                            const brentCurrent = latestOil?.brent || 81.24;
+                            const wtiCurrent = latestOil?.wti || 77.30;
 
-                        {/* TREND INDICATORS - NEW VISUALIZATION */}
-                        <div className="space-y-4">
-                            <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs text-[#8892a0] font-mono">BRENT - Tendance 7 jours</span>
-                                    <span className="text-xs text-[#00ff88] font-bold">+3.2%</span>
-                                </div>
-                                <div className="flex items-center gap-1 h-12">
-                                    {[79.1, 78.8, 79.5, 80.2, 80.8, 81.0, 81.24].map((val, i) => {
-                                        const height = ((val - 78) / 4) * 100;
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                                                <div
-                                                    className="w-full bg-gradient-to-t from-[#00d4ff] to-[#00d4ff]/40 rounded-t transition-all hover:opacity-80"
-                                                    style={{ height: `${height}%` }}
-                                                    title={`$${val}`}
-                                                />
+                            // Get 7-day trend data (last 7 entries)
+                            const last7Days = oilPrices && oilPrices.length >= 7
+                                ? oilPrices.slice(0, 7).reverse()
+                                : [];
+
+                            const brentTrend = last7Days.length > 0
+                                ? last7Days.map(d => d.brent)
+                                : [79.1, 78.8, 79.5, 80.2, 80.8, 81.0, brentCurrent];
+
+                            const wtiTrend = last7Days.length > 0
+                                ? last7Days.map(d => d.wti)
+                                : [75.2, 75.0, 75.8, 76.4, 76.9, 77.1, wtiCurrent];
+
+                            // Calculate percentage change (7 days ago vs current)
+                            const brentChange = brentTrend.length >= 2
+                                ? (((brentTrend[brentTrend.length - 1] - brentTrend[0]) / brentTrend[0]) * 100).toFixed(1)
+                                : "3.2";
+
+                            const wtiChange = wtiTrend.length >= 2
+                                ? (((wtiTrend[wtiTrend.length - 1] - wtiTrend[0]) / wtiTrend[0]) * 100).toFixed(1)
+                                : "2.8";
+
+                            // Calculate daily change
+                            const brentDailyChange = oilPrices && oilPrices.length >= 2
+                                ? (((oilPrices[0].brent - oilPrices[1].brent) / oilPrices[1].brent) * 100).toFixed(1)
+                                : "1.2";
+
+                            const wtiDailyChange = oilPrices && oilPrices.length >= 2
+                                ? (((oilPrices[0].wti - oilPrices[1].wti) / oilPrices[1].wti) * 100).toFixed(1)
+                                : "0.8";
+
+                            const brentDailyDiff = oilPrices && oilPrices.length >= 2
+                                ? (oilPrices[0].brent - oilPrices[1].brent).toFixed(2)
+                                : "0.97";
+
+                            return (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
+                                            <span className="text-[9px] text-[#8892a0] font-mono block mb-1">BRENT CRUDE</span>
+                                            <div className="flex items-end gap-2">
+                                                <span className="text-xl font-bold terminal-text">${brentCurrent.toFixed(2)}</span>
+                                                <span className={`text-[10px] flex items-center mb-1 font-mono ${parseFloat(brentDailyChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                                    {parseFloat(brentDailyChange) >= 0 ? <ChevronUp className="w-3 h-3" /> : '▼'} {Math.abs(parseFloat(brentDailyChange))}%
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
-                                    <span>J-6</span>
-                                    <span>J-3</span>
-                                    <span>Aujourd'hui</span>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs text-[#8892a0] font-mono">WTI - Tendance 7 jours</span>
-                                    <span className="text-xs text-[#00ff88] font-bold">+2.8%</span>
-                                </div>
-                                <div className="flex items-center gap-1 h-12">
-                                    {[75.2, 75.0, 75.8, 76.4, 76.9, 77.1, 77.30].map((val, i) => {
-                                        const height = ((val - 74.5) / 4) * 100;
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                                                <div
-                                                    className="w-full bg-gradient-to-t from-[#00ff88] to-[#00ff88]/40 rounded-t transition-all hover:opacity-80"
-                                                    style={{ height: `${height}%` }}
-                                                    title={`$${val}`}
-                                                />
+                                        </div>
+                                        <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
+                                            <span className="text-[9px] text-[#8892a0] font-mono block mb-1">WTI CRUDE</span>
+                                            <div className="flex items-end gap-2">
+                                                <span className="text-xl font-bold terminal-text">${wtiCurrent.toFixed(2)}</span>
+                                                <span className={`text-[10px] flex items-center mb-1 font-mono ${parseFloat(wtiDailyChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                                    {parseFloat(wtiDailyChange) >= 0 ? <ChevronUp className="w-3 h-3" /> : '▼'} {Math.abs(parseFloat(wtiDailyChange))}%
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
-                                    <span>J-6</span>
-                                    <span>J-3</span>
-                                    <span>Aujourd'hui</span>
-                                </div>
-                            </div>
+                                        </div>
+                                    </div>
 
-                            {/* Market Summary */}
-                            <div className="grid grid-cols-2 gap-3 text-[10px]">
-                                <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
-                                    <span className="text-[#8892a0] block mb-1">Variation Jour</span>
-                                    <span className="text-[#00ff88] font-bold">↑ $0.97</span>
-                                </div>
-                                <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
-                                    <span className="text-[#8892a0] block mb-1">Volume</span>
-                                    <span className="text-white font-bold">Élevé</span>
-                                </div>
-                            </div>
-                        </div>
+                                    {/* TREND INDICATORS - NEW VISUALIZATION */}
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-xs text-[#8892a0] font-mono">BRENT - Tendance 7 jours</span>
+                                                <span className={`text-xs font-bold ${parseFloat(brentChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                                    {parseFloat(brentChange) >= 0 ? '+' : ''}{brentChange}%
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 h-12">
+                                                {brentTrend.map((val, i) => {
+                                                    const minVal = Math.min(...brentTrend);
+                                                    const maxVal = Math.max(...brentTrend);
+                                                    const range = maxVal - minVal || 1;
+                                                    const height = ((val - minVal) / range) * 100;
+                                                    return (
+                                                        <div key={i} className="flex-1 flex flex-col justify-end h-full">
+                                                            <div
+                                                                className="w-full bg-gradient-to-t from-[#00d4ff] to-[#00d4ff]/40 rounded-t transition-all hover:opacity-80"
+                                                                style={{ height: `${height}%` }}
+                                                                title={`$${val.toFixed(2)}`}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
+                                                <span>J-6</span>
+                                                <span>J-3</span>
+                                                <span>Aujourd'hui</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-xs text-[#8892a0] font-mono">WTI - Tendance 7 jours</span>
+                                                <span className={`text-xs font-bold ${parseFloat(wtiChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                                    {parseFloat(wtiChange) >= 0 ? '+' : ''}{wtiChange}%
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 h-12">
+                                                {wtiTrend.map((val, i) => {
+                                                    const minVal = Math.min(...wtiTrend);
+                                                    const maxVal = Math.max(...wtiTrend);
+                                                    const range = maxVal - minVal || 1;
+                                                    const height = ((val - minVal) / range) * 100;
+                                                    return (
+                                                        <div key={i} className="flex-1 flex flex-col justify-end h-full">
+                                                            <div
+                                                                className="w-full bg-gradient-to-t from-[#00ff88] to-[#00ff88]/40 rounded-t transition-all hover:opacity-80"
+                                                                style={{ height: `${height}%` }}
+                                                                title={`$${val.toFixed(2)}`}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
+                                                <span>J-6</span>
+                                                <span>J-3</span>
+                                                <span>Aujourd'hui</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Market Summary */}
+                                        <div className="grid grid-cols-2 gap-3 text-[10px]">
+                                            <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
+                                                <span className="text-[#8892a0] block mb-1">Variation Jour</span>
+                                                <span className={`font-bold ${parseFloat(brentDailyDiff) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                                    {parseFloat(brentDailyDiff) >= 0 ? '↑' : '↓'} ${Math.abs(parseFloat(brentDailyDiff)).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
+                                                <span className="text-[#8892a0] block mb-1">Volume</span>
+                                                <span className="text-white font-bold">Élevé</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -516,8 +574,8 @@ export default function Dashboard() {
                                     onClick={handleExportPDF}
                                     disabled={isGeneratingPDF}
                                     className={`flex items-center gap-2 px-4 py-2 rounded border transition-all ${isGeneratingPDF
-                                            ? 'bg-[#1a1f2e] border-[#00d4ff]/20 text-[#00d4ff]/50 cursor-wait'
-                                            : 'bg-[#00d4ff]/10 border-[#00d4ff]/40 text-[#00d4ff] hover:bg-[#00d4ff]/20 hover:border-[#00d4ff] hover:text-white cursor-pointer'
+                                        ? 'bg-[#1a1f2e] border-[#00d4ff]/20 text-[#00d4ff]/50 cursor-wait'
+                                        : 'bg-[#00d4ff]/10 border-[#00d4ff]/40 text-[#00d4ff] hover:bg-[#00d4ff]/20 hover:border-[#00d4ff] hover:text-white cursor-pointer'
                                         }`}
                                 >
                                     {isGeneratingPDF ? (
