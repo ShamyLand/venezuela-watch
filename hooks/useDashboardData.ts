@@ -38,6 +38,7 @@ export function useDashboardData() {
                 });
             }
 
+
             // 3. Fetch Oil Prices (Extended for 30-day detailed chart)
             const { data: oilData } = await supabase
                 .from('oil_prices')
@@ -45,9 +46,36 @@ export function useDashboardData() {
                 .order('timestamp', { ascending: false })
                 .limit(200); // Show 30 days of price history
 
-            if (oilData) setOilPrices(oilData);
+            if (oilData && oilData.length > 0) {
+                // Transform data: Group BRENT and WTI by timestamp
+                const grouped = new Map();
+
+                oilData.forEach((record: any) => {
+                    const ts = record.timestamp;
+                    if (!grouped.has(ts)) {
+                        grouped.set(ts, { timestamp: ts });
+                    }
+                    const entry = grouped.get(ts);
+
+                    if (record.symbol === 'BRENT') {
+                        entry.brent = record.price;
+                        entry.brent_change = record.change_percent;
+                    } else if (record.symbol === 'WTI') {
+                        entry.wti = record.price;
+                        entry.wti_change = record.change_percent;
+                    }
+                });
+
+                // Convert to array and filter incomplete entries
+                const combined = Array.from(grouped.values())
+                    .filter((entry: any) => entry.brent && entry.wti)
+                    .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                setOilPrices(combined);
+            }
 
             setLastUpdate(new Date());
+
 
         } catch (error) {
             console.error("Dashboard Data Fetch Error:", error);

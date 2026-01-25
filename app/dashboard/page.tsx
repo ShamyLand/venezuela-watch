@@ -323,13 +323,16 @@ export default function Dashboard() {
                                 const formattedDate = newsDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
                                 const formattedTime = newsDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-                                // Google Search fallback pour éviter les 404
-                                const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(n.title_fr || n.title)}`;
+                                // Use real URL if available, fallback to Google Search only if missing
+                                const hasRealUrl = n.url && n.url.startsWith('http');
+                                const linkUrl = hasRealUrl ? n.url : `https://www.google.com/search?q=${encodeURIComponent(n.title_fr || n.title)}`;
+                                const linkText = hasRealUrl ? 'Lire l\'article' : 'Rechercher sur Google';
+                                const linkIcon = hasRealUrl ? 'text-[#00ff88]' : 'text-[#00d4ff]';
 
                                 return (
                                     <div
                                         key={i}
-                                        onClick={() => window.open(googleSearchUrl, '_blank')}
+                                        onClick={() => window.open(linkUrl, '_blank')}
                                         className="news-item-antigravity block p-4 rounded-xl border border-transparent hover:border-[#00d4ff4d] hover:scale-[1.02] transition-all cursor-pointer"
                                     >
                                         <div className="flex justify-between items-start mb-2 text-[10px]">
@@ -341,9 +344,9 @@ export default function Dashboard() {
                                         <h3 className="text-[13px] font-semibold leading-snug line-clamp-2">
                                             {n.title_fr || n.title}
                                         </h3>
-                                        <div className="mt-2 flex items-center gap-1 text-[9px] text-[#00ff88]">
+                                        <div className={`mt-2 flex items-center gap-1 text-[9px] ${linkIcon}`}>
                                             <ExternalLink className="w-3 h-3" />
-                                            <span>Rechercher sur Google</span>
+                                            <span>{linkText}</span>
                                         </div>
                                     </div>
                                 );
