@@ -66,7 +66,13 @@ const VENEZUELA_KEYWORDS = [
     'machado',
     'maría corina',
     'latin america',
-    'south america'
+    'south america',
+    'oil sanctions',
+    'opec',
+    'crude oil',
+    'colombia',
+    'guyana',
+    'essequibo'
 ];
 
 interface NewsArticle {
@@ -157,19 +163,78 @@ export async function fetchNewsFromRSS(): Promise<NewsArticle[]> {
 /**
  * Fallback mock data si tous les flux échouent
  */
+/**
+ * Fetch from NewsAPI as a robust fallback
+ * Uses the API key from .env.local
+ */
+async function fetchFromNewsAPI(): Promise<NewsArticle[]> {
+    const apiKey = process.env.NEWS_API_KEY;
+    if (!apiKey) {
+        console.warn('⚠️ No NEWS_API_KEY found, skipping NewsAPI fallback');
+        return [];
+    }
+
+    try {
+        console.log('📰 Fetching from NewsAPI.org...');
+        // Query for Venezuela-specific news, sorted by newest
+        const response = await fetch(
+            `https://newsapi.org/v2/everything?q=venezuela&language=en&sortBy=publishedAt&pageSize=15&apiKey=${apiKey}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`NewsAPI status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.articles || !Array.isArray(data.articles)) {
+            return [];
+        }
+
+        console.log(`✅ NewsAPI returned ${data.articles.length} articles`);
+
+        return data.articles.map((a: any) => ({
+            title: a.title,
+            title_original: a.title,
+            url: a.url,
+            published_at: a.publishedAt,
+            source_name: a.source?.name || 'NewsAPI',
+            summary: a.description || '',
+            language: 'en'
+        }));
+
+    } catch (error) {
+        console.error('❌ NewsAPI Error:', error);
+        return [];
+    }
+}
+
+/**
+ * Main news fetching function with multi-level fallbacks
+ */
 export async function fetchNews(): Promise<NewsArticle[]> {
     try {
-        const articles = await fetchNewsFromRSS();
+        // 1. Try RSS Feeds first
+        let articles = await fetchNewsFromRSS();
 
-        // Si aucun article trouvé, retourner des mocks
+        // 2. If RSS empty, try NewsAPI
         if (articles.length === 0) {
-            console.warn("⚠️ No RSS articles found, using fallback mock data");
+            console.log("⚠️ RSS feeds empty, switching to NewsAPI...");
+            const apiArticles = await fetchFromNewsAPI();
+            if (apiArticles.length > 0) {
+                return apiArticles;
+            }
+        }
+
+        // 3. If still empty, use fallback mock data
+        if (articles.length === 0) {
+            console.warn("⚠️ All news sources empty, using fallback mock data");
             return getMockArticles();
         }
 
         return articles;
     } catch (error) {
-        console.error("❌ RSS fetch failed completely:", error);
+        console.error("❌ News fetch failed completely:", error);
         return getMockArticles();
     }
 }

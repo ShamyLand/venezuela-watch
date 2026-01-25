@@ -11,6 +11,32 @@ interface OilData {
 }
 
 /**
+ * Validate oil price to ensure it's within reasonable market bounds
+ * Prevents storing abnormal API data
+ */
+function isValidOilPrice(price: number, symbol: string): boolean {
+    const MIN_BRENT = 50;
+    const MAX_BRENT = 120;
+    const MIN_WTI = 45;
+    const MAX_WTI = 115;
+
+    if (symbol === 'BRENT') {
+        const isValid = price >= MIN_BRENT && price <= MAX_BRENT;
+        if (!isValid) {
+            console.warn(`⚠️ Invalid BRENT price detected: $${price.toFixed(2)} (valid range: $${MIN_BRENT}-$${MAX_BRENT})`);
+        }
+        return isValid;
+    } else if (symbol === 'WTI') {
+        const isValid = price >= MIN_WTI && price <= MAX_WTI;
+        if (!isValid) {
+            console.warn(`⚠️ Invalid WTI price detected: $${price.toFixed(2)} (valid range: $${MIN_WTI}-$${MAX_WTI})`);
+        }
+        return isValid;
+    }
+    return false;
+}
+
+/**
  * Fetch oil prices from Financial Modeling Prep (FREE - No API Key Required)
  * Provides real-time commodity prices
  */
@@ -31,15 +57,25 @@ async function fetchFromFMP(): Promise<OilData | null> {
             );
 
             if (brent && wti) {
+                const brentPrice = parseFloat(brent.price);
+                const wtiPrice = parseFloat(wti.price);
+
+                // Validate prices before returning
+                if (!isValidOilPrice(brentPrice, 'BRENT') || !isValidOilPrice(wtiPrice, 'WTI')) {
+                    console.error('❌ FMP API returned invalid prices, rejecting data');
+                    return null;
+                }
+
+                console.log(`✅ FMP API: BRENT $${brentPrice.toFixed(2)}, WTI $${wtiPrice.toFixed(2)}`);
                 return {
                     brent: {
-                        price: parseFloat(brent.price),
+                        price: brentPrice,
                         change: parseFloat(brent.change || 0),
                         changePercent: parseFloat(brent.changesPercentage || 0),
                         timestamp: new Date().toISOString()
                     },
                     wti: {
-                        price: parseFloat(wti.price),
+                        price: wtiPrice,
                         change: parseFloat(wti.change || 0),
                         changePercent: parseFloat(wti.changesPercentage || 0),
                         timestamp: new Date().toISOString()
@@ -74,17 +110,27 @@ async function fetchFromYahooFinance(): Promise<OilData | null> {
             const brentQuote = brentData.chart.result[0].meta;
             const wtiQuote = wtiData.chart.result[0].meta;
 
+            const brentPrice = parseFloat(brentQuote.regularMarketPrice || brentQuote.previousClose);
+            const wtiPrice = parseFloat(wtiQuote.regularMarketPrice || wtiQuote.previousClose);
+
+            // Validate prices before returning
+            if (!isValidOilPrice(brentPrice, 'BRENT') || !isValidOilPrice(wtiPrice, 'WTI')) {
+                console.error('❌ Yahoo Finance API returned invalid prices, rejecting data');
+                return null;
+            }
+
+            console.log(`✅ Yahoo Finance: BRENT $${brentPrice.toFixed(2)}, WTI $${wtiPrice.toFixed(2)}`);
             return {
                 brent: {
-                    price: parseFloat(brentQuote.regularMarketPrice || brentQuote.previousClose),
-                    change: parseFloat(brentQuote.regularMarketPrice - brentQuote.previousClose || 0),
-                    changePercent: parseFloat(((brentQuote.regularMarketPrice - brentQuote.previousClose) / brentQuote.previousClose * 100) || 0),
+                    price: brentPrice,
+                    change: brentQuote.regularMarketPrice - brentQuote.previousClose || 0,
+                    changePercent: ((brentQuote.regularMarketPrice - brentQuote.previousClose) / brentQuote.previousClose * 100) || 0,
                     timestamp: new Date().toISOString()
                 },
                 wti: {
-                    price: parseFloat(wtiQuote.regularMarketPrice || wtiQuote.previousClose),
-                    change: parseFloat(wtiQuote.regularMarketPrice - wtiQuote.previousClose || 0),
-                    changePercent: parseFloat(((wtiQuote.regularMarketPrice - wtiQuote.previousClose) / wtiQuote.previousClose * 100) || 0),
+                    price: wtiPrice,
+                    change: wtiQuote.regularMarketPrice - wtiQuote.previousClose || 0,
+                    changePercent: ((wtiQuote.regularMarketPrice - wtiQuote.previousClose) / wtiQuote.previousClose * 100) || 0,
                     timestamp: new Date().toISOString()
                 }
             };
@@ -115,15 +161,25 @@ async function fetchFromTradingEconomics(): Promise<OilData | null> {
             );
 
             if (brent && wti) {
+                const brentPrice = parseFloat(brent.Last || brent.Close);
+                const wtiPrice = parseFloat(wti.Last || wti.Close);
+
+                // Validate prices before returning
+                if (!isValidOilPrice(brentPrice, 'BRENT') || !isValidOilPrice(wtiPrice, 'WTI')) {
+                    console.error('❌ Trading Economics API returned invalid prices, rejecting data');
+                    return null;
+                }
+
+                console.log(`✅ Trading Economics: BRENT $${brentPrice.toFixed(2)}, WTI $${wtiPrice.toFixed(2)}`);
                 return {
                     brent: {
-                        price: parseFloat(brent.Last || brent.Close),
+                        price: brentPrice,
                         change: parseFloat(brent.DailyChange || 0),
                         changePercent: parseFloat(brent.DailyPercentualChange || 0),
                         timestamp: new Date().toISOString()
                     },
                     wti: {
-                        price: parseFloat(wti.Last || wti.Close),
+                        price: wtiPrice,
                         change: parseFloat(wti.DailyChange || 0),
                         changePercent: parseFloat(wti.DailyPercentualChange || 0),
                         timestamp: new Date().toISOString()
@@ -199,7 +255,9 @@ export async function fetchOilPrices(): Promise<OilData> {
     }
 
     // Fallback to realistic mock data
-    console.warn('⚠️ Using realistic market data (all public sources unavailable)');
+    console.warn('⚠️  All public oil price sources failed or returned invalid data');
+    console.warn('⚠️  Using conservative mock prices based on January 2026 market averages');
+    console.warn('⚠️  Consider configuring a paid API (Alpha Vantage key is in .env.local)');
     return getMockOilPrices();
 }
 
