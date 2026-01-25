@@ -134,28 +134,98 @@ export async function POST(request: NextRequest) {
       return `[${new Date(item.created_at).toLocaleDateString('fr-FR')}] ${item.title}\n${item.description}\nSource: ${item.source}`;
     }).join('\n\n') || 'Aucune actualité récente disponible.';
 
-    // 5. Générer la synthèse avec Gemini
+    // 5. Générer la synthèse avec Gemini (avec timeout)
     console.log("🤖 Generating AI summary for PDF...");
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
 
-    const result = await model.generateContent([
-      PDF_SUMMARY_PROMPT,
-      `Voici les données à analyser:\n\nACTUALITÉS RÉCENTES (48h):\n${newsContext}\n\nPRIX DU PÉTROLE ACTUEL:\nBrent: ${oilData?.brent || 'N/A'} USD\nWTI: ${oilData?.wti || 'N/A'} USD\n\nDate actuelle: ${new Date().toISOString()}`
-    ]);
+    let parsedSummary;
 
-    const response = await result.response;
-    let aiSummary = response.text();
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3-flash-preview",
+        generationConfig: {
+          responseMimeType: "application/json",
+        }
+      });
 
-    // Nettoyage du JSON
-    aiSummary = aiSummary.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsedSummary = JSON.parse(aiSummary);
+      // Timeout de 25 secondes pour Gemini
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini timeout après 25 secondes')), 25000)
+      );
 
-    console.log("✅ AI summary generated successfully");
+      const geminiPromise = model.generateContent([
+        PDF_SUMMARY_PROMPT,
+        `Voici les données à analyser:\n\nACTUALITÉS RÉCENTES (48h):\n${newsContext}\n\nPRIX DU PÉTROLE ACTUEL:\nBrent: ${oilData?.brent || 'N/A'} USD\nWTI: ${oilData?.wti || 'N/A'} USD\n\nDate actuelle: ${new Date().toISOString()}`
+      ]);
+
+      const result = await Promise.race([geminiPromise, timeoutPromise]) as any;
+      const response = await result.response;
+      let aiSummary = response.text();
+
+      // Nettoyage du JSON
+      aiSummary = aiSummary.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsedSummary = JSON.parse(aiSummary);
+
+      console.log("✅ AI summary generated successfully");
+    } catch (geminiError) {
+      console.error("⚠️ Gemini generation failed, using fallback data:", geminiError);
+
+      // FALLBACK : Générer une synthèse de base sans IA
+      parsedSummary = {
+        titre_rapport: "VENEZUELA WATCH - Synthèse Géopolitique",
+        sous_titre: `Analyse du ${new Date().toLocaleDateString('fr-FR')}`,
+        synthese_executive: {
+          resume_general: "Rapport généré sans analyse IA complète. Les données brutes sont disponibles ci-dessous.",
+          points_cles: [
+            `${newsData?.length || 0} actualités collectées sur les dernières 48h`,
+            "Analyse IA temporairement indisponible",
+            "Consultez les données brutes pour plus d'informations",
+            "Prix du pétrole : voir section économique",
+            "Mise à jour automatique toutes les heures"
+          ],
+          tendance_generale: "STABLE",
+          evaluation_risque: "MODÉRÉ"
+        },
+        analyse_geopolitique: {
+          contexte: "L'analyse géopolitique complète n'est pas disponible pour ce rapport. Veuillez consulter le dashboard en ligne pour les dernières analyses.",
+          developpements_recents: "Données collectées mais analyse IA indisponible.",
+          implications: "Consultez le dashboard pour l'analyse en temps réel."
+        },
+        analyse_economique: {
+          situation_petrole: `Prix actuels du pétrole : Brent à ${oilData?.brent || 'N/A'} USD/baril, WTI à ${oilData?.wti || 'N/A'} USD/baril.`,
+          marche_mondial: "Analyse détaillée disponible sur le dashboard.",
+          sanctions_economiques: "Voir dashboard pour détails."
+        },
+        indicateurs_cles: {
+          tension_geopolitique: 5.0,
+          volatilite_petrole: 5.0,
+          risque_sanctions: 5.0,
+          stabilite_regionale: 5.0,
+          pression_internationale: 5.0
+        },
+        timeline_evenements: newsData?.slice(0, 10).map((n: any) => ({
+          date: n.created_at,
+          titre: n.title || n.title_fr || "Événement",
+          description: n.description?.substring(0, 100) || "Pas de description",
+          impact: "MOYEN",
+          categorie: "ACTUALITE"
+        })) || [],
+        alertes_actives: [{
+          titre: "Analyse IA indisponible",
+          description: "La synthèse complète n'a pas pu être générée. Consultez le dashboard pour l'analyse en temps réel.",
+          niveau: "MOYEN",
+          recommandation: "Réessayez dans quelques minutes ou consultez le dashboard."
+        }],
+        previsions_court_terme: {
+          "7_jours": "Prévisions détaillées disponibles sur le dashboard en ligne.",
+          facteurs_surveillance: [
+            "Évolution des prix du pétrole",
+            "Nouvelles sanctions potentielles",
+            "Développements politiques"
+          ]
+        },
+        sources_principales: newsData?.slice(0, 3).map((n: any) => n.source || "Source inconnue") || ["Dashboard Venezuela Watch"]
+      };
+    }
 
     // 6. Compiler toutes les données pour le PDF
     const pdfData = {
