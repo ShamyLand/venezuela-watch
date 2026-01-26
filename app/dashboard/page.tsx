@@ -253,7 +253,7 @@ export default function Dashboard() {
     return (
         <div className="flex flex-col min-h-screen text-[#e8e8e8] selection:bg-[#00d4ff] selection:text-[#0a0e17]">
             {/* BREAKING NEWS TICKER */}
-            {analysis?.alerts && <NewsTicker alerts={analysis.alerts} />}
+            {mounted && analysis?.alerts && <NewsTicker alerts={analysis.alerts} />}
             {/* HEADER */}
             <header className="h-24 border-b border-[#00d4ff1a] bg-[#0d1526d9] backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
@@ -301,11 +301,11 @@ export default function Dashboard() {
                 <div className="flex gap-8 font-mono text-right">
                     <div>
                         <span className="block text-[9px] text-[#8892a0] font-bold">CARACAS</span>
-                        <span className="text-base font-black text-[#00d4ff]">{times.caracas}</span>
+                        <span className="text-base font-black text-[#00d4ff]">{mounted ? times.caracas : "--:--:--"}</span>
                     </div>
                     <div>
                         <span className="block text-[9px] text-[#8892a0] font-bold">PARIS</span>
-                        <span className="text-base font-black text-[#00d4ff]">{times.paris}</span>
+                        <span className="text-base font-black text-[#00d4ff]">{mounted ? times.paris : "--:--:--"}</span>
                     </div>
                 </div>
             </header>
