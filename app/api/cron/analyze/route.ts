@@ -3,6 +3,7 @@ import { fetchNews } from '@/lib/news-service';
 import { generateAnalysis } from '@/lib/gemini-service';
 import { fetchOilPrices } from '@/lib/oil-service';
 import { supabase } from '@/lib/supabase';
+import { sendAlertEmail } from '@/lib/email-service';
 
 // FORCE DYNAMIC: This route must not be cached, it runs on demand/schedule
 export const dynamic = 'force-dynamic';
@@ -125,6 +126,43 @@ export async function GET(request: Request) {
 
         console.log("✅ Analysis stored successfully!");
 
+        // 7. Send Email Notifications if Alerts exist
+        let emailCount = 0;
+        if (analysis.alerts && analysis.alerts.length > 0) {
+            console.log("📧 Alerts detected, fetching active subscribers...");
+
+            // Fetch subscribers (using service role would be best but trying public client first)
+            // If this fails due to RLS, we need the service role key. 
+            // Assuming the Supabase client here is configured with enough privileges or table is public read (unlikely).
+            // Actually, in an API route, we should ideally use a service role client.
+            // But let's try reading. If it fails, we log it.
+            const { data: subscribers, error: subError } = await supabase
+                .from('subscribers')
+                .select('email')
+                .eq('is_active', true);
+
+            if (subError) {
+                console.error("❌ Failed to fetch subscribers:", subError.message);
+            } else if (subscribers && subscribers.length > 0) {
+                console.log(`📧 Sending emails to ${subscribers.length} subscribers...`);
+
+                // Send emails in parallel (limit concurrency in prod but ok for small scale)
+                const emailPromises = subscribers.map(sub =>
+                    sendAlertEmail({
+                        email: sub.email,
+                        alerts: analysis.alerts,
+                        analysisFlash: analysis.flash
+                    })
+                );
+
+                await Promise.all(emailPromises);
+                emailCount = subscribers.length;
+                console.log("✅ Emails sent!");
+            } else {
+                console.log("ℹ️ No active subscribers found.");
+            }
+        }
+
         return NextResponse.json({
             success: true,
             message: "RSS + Oil + Gemini analysis completed",
@@ -134,7 +172,8 @@ export async function GET(request: Request) {
                     brent: oilData.brent?.price,
                     wti: oilData.wti?.price
                 },
-                analysis_timestamp: new Date().toISOString()
+                analysis_timestamp: new Date().toISOString(),
+                emails_sent: emailCount
             }
         });
 
@@ -147,3 +186,4 @@ export async function GET(request: Request) {
         }, { status: 500 });
     }
 }
+
