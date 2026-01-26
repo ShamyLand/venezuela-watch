@@ -978,62 +978,62 @@ export default function Dashboard() {
           background: #4a5568;
         }
       `}</style>
-            </div>
 
-            {/* SUBSCRIBE MODAL */ }
-        {
-            showSubscribeModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0d1526] border border-[#1a1f2e] rounded-xl max-w-md w-full p-6 shadow-2xl relative">
-                        <button
-                            onClick={() => setShowSubscribeModal(false)}
-                            className="absolute top-4 right-4 text-[#8892a0] hover:text-white"
-                        >
-                            ✕
-                        </button>
 
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-[#00ff88]/10 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="w-5 h-5 text-[#00ff88]" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-white">Alerte Immédiate</h3>
-                                <p className="text-xs text-[#8892a0]">Recevez les analyses critiques par email</p>
+                {/* SUBSCRIBE MODAL */}
+                {
+                    showSubscribeModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                            <div className="bg-[#0d1526] border border-[#1a1f2e] rounded-xl max-w-md w-full p-6 shadow-2xl relative">
+                                <button
+                                    onClick={() => setShowSubscribeModal(false)}
+                                    className="absolute top-4 right-4 text-[#8892a0] hover:text-white"
+                                >
+                                    ✕
+                                </button>
+
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 bg-[#00ff88]/10 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-5 h-5 text-[#00ff88]" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white">Alerte Immédiate</h3>
+                                        <p className="text-xs text-[#8892a0]">Recevez les analyses critiques par email</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleSubscribe} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-mono text-[#8892a0] mb-2">VOTRE ADRESSE EMAIL PROFESSIONNELLE</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="nom@organisation.com"
+                                            className="w-full bg-[#0a0e17] border border-[#1a1f2e] focus:border-[#00ff88] rounded p-3 text-sm text-white outline-none transition-colors"
+                                        />
+                                    </div>
+
+                                    <div className="p-3 bg-[#1a1f2e]/50 rounded border border-[#1a1f2e] text-[10px] text-[#8892a0]">
+                                        <p>✓ Notifications instantanées si Tension &gt; 7.0</p>
+                                        <p>✓ Rapport quotidien automatique</p>
+                                        <p>✓ Vous pouvez vous désinscrire à tout moment</p>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={subscribing}
+                                        className="w-full bg-[#00ff88] hover:bg-[#00ff88]/80 text-black font-bold py-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {subscribing ? 'ACTIVATION...' : 'ACTIVER LA VEILLE'}
+                                    </button>
+                                </form>
                             </div>
                         </div>
-
-                        <form onSubmit={handleSubscribe} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-mono text-[#8892a0] mb-2">VOTRE ADRESSE EMAIL PROFESSIONNELLE</label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="nom@organisation.com"
-                                    className="w-full bg-[#0a0e17] border border-[#1a1f2e] focus:border-[#00ff88] rounded p-3 text-sm text-white outline-none transition-colors"
-                                />
-                            </div>
-
-                            <div className="p-3 bg-[#1a1f2e]/50 rounded border border-[#1a1f2e] text-[10px] text-[#8892a0]">
-                                <p>✓ Notifications instantanées si Tension &gt; 7.0</p>
-                                <p>✓ Rapport quotidien automatique</p>
-                                <p>✓ Vous pouvez vous désinscrire à tout moment</p>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={subscribing}
-                                className="w-full bg-[#00ff88] hover:bg-[#00ff88]/80 text-black font-bold py-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {subscribing ? 'ACTIVATION...' : 'ACTIVER LA VEILLE'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )
-        }
-        </div >
-    );
-}
+                    )
+                }
+            </div >
+        );
+    }
 
