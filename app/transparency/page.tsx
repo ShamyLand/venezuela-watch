@@ -20,6 +20,12 @@ export default function TransparencyPage() {
                         </h1>
                     </div>
                 </div>
+                <div>
+                    <Link href="/sources" className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1f2e] border border-[#1a1f2e] hover:border-[#00d4ff]/50 rounded text-[10px] font-mono text-[#8892a0] hover:text-[#00d4ff] transition-all">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span className="hidden md:inline">INDEX DES SOURCES</span>
+                    </Link>
+                </div>
             </header>
 
             <main className="flex-1 p-6 max-w-[1000px] mx-auto w-full space-y-12">
