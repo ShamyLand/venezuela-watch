@@ -61,6 +61,11 @@ export default function Dashboard() {
     const [timelineScrollPosition, setTimelineScrollPosition] = useState(0);
     const timelineRef = React.useRef<HTMLDivElement>(null);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Calculate time since last update
     const getTimeSinceUpdate = () => {
@@ -269,10 +274,12 @@ export default function Dashboard() {
                         <div className="mt-1 flex items-center gap-2 text-[10px]">
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-[#00ff88]/10 border border-[#00ff88]/30 rounded-md">
                                 <Clock className="w-3 h-3 text-[#00ff88] animate-pulse" />
-                                <span className="text-[#00ff88] font-bold">Mis à jour {getTimeSinceUpdate()}</span>
+                                <span className="text-[#00ff88] font-bold">
+                                    {mounted ? `Mis à jour ${getTimeSinceUpdate()}` : "Chargement..."}
+                                </span>
                             </div>
                             <span className="text-[8px] text-[#8892a0]">
-                                {lastUpdate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à {lastUpdate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                {mounted ? `${lastUpdate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à ${lastUpdate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : "..."}
                             </span>
                         </div>
                     </div>
