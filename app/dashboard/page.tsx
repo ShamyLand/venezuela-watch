@@ -20,7 +20,8 @@ import {
     ChevronRight,
     ExternalLink,
     ChevronUp,
-    FileDown
+    FileDown,
+    Database
 } from "lucide-react";
 import {
     LineChart,
@@ -283,6 +284,12 @@ export default function Dashboard() {
                             </span>
                         </div>
                     </div>
+
+                    {/* SOURCES BUTTON */}
+                    <a href="/sources" className="ml-4 flex items-center gap-2 px-3 py-1.5 bg-[#1a1f2e] hover:bg-[#00d4ff]/20 border border-[#1a1f2e] hover:border-[#00d4ff]/50 rounded text-[10px] font-mono text-[#8892a0] hover:text-[#00d4ff] transition-all group">
+                        <Database className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
+                        <span className="font-bold tracking-wider hidden md:inline">SOURCES & IA</span>
+                    </a>
                 </div>
 
                 <div className="hidden lg:flex items-center gap-6 px-8 border-l border-white/10 h-10">
