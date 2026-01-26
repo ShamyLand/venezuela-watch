@@ -114,6 +114,7 @@ export async function GET(request: Request) {
                 flash_json: analysis.flash,
                 report_json: analysis.report,
                 alerts_json: analysis.alerts,
+                transparency_json: analysis.transparency,
                 timestamp: new Date().toISOString()
             });
 
