@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash", // Use faster/better model if available, fallback to flash
+        model: "gemini-3-flash-preview", // UPDATED to latest
         generationConfig: {
           responseMimeType: "application/json",
         }

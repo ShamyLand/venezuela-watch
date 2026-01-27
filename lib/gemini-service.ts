@@ -116,12 +116,14 @@ export async function generateAnalysis(newsContext: string) {
     const parsed = JSON.parse(text);
     console.log("✅ JSON parsed successfully");
     return parsed;
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Gemini Analysis Failed:", error);
-    if (error instanceof Error) {
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+    // DETAILED ERROR LOGGING
+    if (error.response) {
+      console.error("API Response Error:", JSON.stringify(error.response, null, 2));
+    }
+    if (error.message) {
+      console.error("Error Message:", error.message);
     }
     return null;
   }
