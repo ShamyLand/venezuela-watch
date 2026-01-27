@@ -8,6 +8,10 @@ interface OilPrice {
 interface OilData {
     brent: OilPrice | null;
     wti: OilPrice | null;
+    history?: {
+        brent: OilPrice[];
+        wti: OilPrice[];
+    };
 }
 
 /**
@@ -90,21 +94,52 @@ async function fetchFromFMP(): Promise<OilData | null> {
     }
 }
 
+interface OilData {
+    brent: OilPrice | null;
+    wti: OilPrice | null;
+    history?: {
+        brent: OilPrice[];
+        wti: OilPrice[];
+    };
+}
+
+// ... (keep isValidOilPrice)
+
 /**
- * Fetch from Yahoo Finance Alternative API (FREE - No Key Required)
+ * Fetch from Yahoo Finance (Free public quotes)
+ * NOW INCLUDES HISTORY (5d range)
  */
 async function fetchFromYahooFinance(): Promise<OilData | null> {
     try {
-        // Using free Yahoo Finance quotes
+        // Fetch 1 month to ensure we get enough valid trading days
         const brentResponse = await fetch(
-            'https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d&range=1d'
+            'https://query1.finance.yahoo.com/v8/finance/chart/BZ=F?interval=1d&range=1mo'
         );
         const wtiResponse = await fetch(
-            'https://query1.finance.yahoo.com/v8/finance/chart/CL=F?interval=1d&range=1d'
+            'https://query1.finance.yahoo.com/v8/finance/chart/CL=F?interval=1d&range=1mo'
         );
 
         const brentData = await brentResponse.json();
         const wtiData = await wtiResponse.json();
+
+        // Helper to extract history
+        const extractHistory = (data: any, symbol: string): OilPrice[] => {
+            const result = data.chart?.result?.[0];
+            if (!result) return [];
+
+            const timestamps = result.timestamp || [];
+            const quotes = result.indicators?.quote?.[0] || {};
+            const closes = quotes.close || [];
+
+            return timestamps.map((t: number, i: number) => ({
+                timestamp: new Date(t * 1000).toISOString(),
+                price: parseFloat((closes[i] || 0).toFixed(2)),
+                change: 0, // Not needed for history items
+                changePercent: 0
+            }))
+                .filter((item: OilPrice) => item.price > 0 && isValidOilPrice(item.price, symbol))
+                .slice(-30); // Keep last 30 days
+        };
 
         if (brentData.chart?.result?.[0] && wtiData.chart?.result?.[0]) {
             const brentQuote = brentData.chart.result[0].meta;
@@ -113,13 +148,14 @@ async function fetchFromYahooFinance(): Promise<OilData | null> {
             const brentPrice = parseFloat(brentQuote.regularMarketPrice || brentQuote.previousClose);
             const wtiPrice = parseFloat(wtiQuote.regularMarketPrice || wtiQuote.previousClose);
 
-            // Validate prices before returning
+            // Validate
             if (!isValidOilPrice(brentPrice, 'BRENT') || !isValidOilPrice(wtiPrice, 'WTI')) {
-                console.error('❌ Yahoo Finance API returned invalid prices, rejecting data');
+                console.error('❌ Yahoo Finance API returned invalid prices');
                 return null;
             }
 
             console.log(`✅ Yahoo Finance: BRENT $${brentPrice.toFixed(2)}, WTI $${wtiPrice.toFixed(2)}`);
+
             return {
                 brent: {
                     price: brentPrice,
@@ -132,6 +168,10 @@ async function fetchFromYahooFinance(): Promise<OilData | null> {
                     change: wtiQuote.regularMarketPrice - wtiQuote.previousClose || 0,
                     changePercent: ((wtiQuote.regularMarketPrice - wtiQuote.previousClose) / wtiQuote.previousClose * 100) || 0,
                     timestamp: new Date().toISOString()
+                },
+                history: {
+                    brent: extractHistory(brentData, 'BRENT'),
+                    wti: extractHistory(wtiData, 'WTI')
                 }
             };
         }
@@ -233,17 +273,18 @@ export async function fetchOilPrices(): Promise<OilData> {
 
     let oilData: OilData | null = null;
 
-    // Try Source 1: Financial Modeling Prep (Free public API)
-    oilData = await fetchFromFMP();
+    // Try Source 1: Yahoo Finance (Prioritized for History)
+    // Yahoo provides 7-day history which is crucial for the dashboard charts
+    oilData = await fetchFromYahooFinance();
     if (oilData?.brent && oilData?.wti) {
-        console.log('✅ Oil prices from Financial Modeling Prep (public)');
+        console.log('✅ Oil prices from Yahoo Finance (public + history)');
         return oilData;
     }
 
-    // Try Source 2: Yahoo Finance (Free public quotes)
-    oilData = await fetchFromYahooFinance();
+    // Try Source 2: Financial Modeling Prep (Free public API)
+    oilData = await fetchFromFMP();
     if (oilData?.brent && oilData?.wti) {
-        console.log('✅ Oil prices from Yahoo Finance (public)');
+        console.log('✅ Oil prices from Financial Modeling Prep (public)');
         return oilData;
     }
 

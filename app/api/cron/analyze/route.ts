@@ -52,14 +52,12 @@ export async function GET(request: Request) {
             }
         }
 
-        // 4. Store Oil Prices in Database
+        // 4. Store Oil Prices in Database (Current + History)
         if (oilData.brent && oilData.wti) {
             console.log("💾 Storing oil prices...");
 
             const timestamp = new Date().toISOString();
-
-            // Insert Brent and WTI as separate rows (matching schema)
-            const oilPricesToInsert = [
+            const currentPrices = [
                 {
                     symbol: 'BRENT',
                     price: oilData.brent.price,
@@ -74,14 +72,46 @@ export async function GET(request: Request) {
                 }
             ];
 
+            // Prepare history items if available
+            let allPricesToUpsert = [...currentPrices];
+            if (oilData.history) {
+                console.log("📜 Processing historical oil data...");
+                const historyBrent = oilData.history.brent.map(h => ({
+                    symbol: 'BRENT',
+                    price: h.price,
+                    change_percent: 0,
+                    timestamp: h.timestamp // Real timestamp from API
+                }));
+                const historyWti = oilData.history.wti.map(h => ({
+                    symbol: 'WTI',
+                    price: h.price,
+                    change_percent: 0,
+                    timestamp: h.timestamp // Real timestamp from API
+                }));
+                allPricesToUpsert = [...allPricesToUpsert, ...historyBrent, ...historyWti];
+            }
+
+            // Upsert all data (current + history)
+            // Note: This requires a unique constraint on (symbol, timestamp) to work perfectly as Upsert.
+            // If no unique constraint exists, it might create duplicates.
+            // However, typical Supabase setup for time-series often uses timestamp as PK or part of unique index.
+            // We'll proceed with upsert logic.
             const { error: oilError } = await supabase
                 .from('oil_prices')
-                .insert(oilPricesToInsert);
+                .upsert(allPricesToUpsert, {
+                    onConflict: 'symbol, timestamp',
+                    ignoreDuplicates: true
+                });
 
             if (oilError) {
                 console.error("❌ Error storing oil prices:", oilError.message);
+                // Fallback to simple insert of current if upsert fails (e.g. no unique constraint)
+                if (oilError.message.includes('constraint')) {
+                    console.log("⚠️ Fallback: Inserting only current prices due to constraint issue");
+                    await supabase.from('oil_prices').insert(currentPrices);
+                }
             } else {
-                console.log("✅ Oil prices stored (Brent & WTI)");
+                console.log(`✅ Stored ${allPricesToUpsert.length} oil price points (Current + History)`);
             }
         }
 
