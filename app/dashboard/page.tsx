@@ -434,113 +434,122 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* WIDGET 3: OIL PRICES */}
-                    <div className="glass-card p-4">
-                        <div className="flex items-center justify-between mb-6">
+                    {/* WIDGET 3: OIL PRICES REFACTORED */}
+                    <div className="glass-card p-4 flex flex-col h-[500px]">
+                        <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-[#00ff88]" />
                                 <h2 className="text-xs uppercase font-bold tracking-widest font-mono">Marché Pétrolier</h2>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">BRENT CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">${brentCurrent.toFixed(2)}</span>
-                                    <span className={`text-[10px] flex items-center mb-1 font-mono ${parseFloat(brentDailyChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
-                                        {parseFloat(brentDailyChange) >= 0 ? <ChevronUp className="w-3 h-3" /> : '▼'} {Math.abs(parseFloat(brentDailyChange))}%
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="p-3 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden group">
-                                <span className="text-[9px] text-[#8892a0] font-mono block mb-1">WTI CRUDE</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-xl font-bold terminal-text">${wtiCurrent.toFixed(2)}</span>
-                                    <span className={`text-[10px] flex items-center mb-1 font-mono ${parseFloat(wtiDailyChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
-                                        {parseFloat(wtiDailyChange) >= 0 ? <ChevronUp className="w-3 h-3" /> : '▼'} {Math.abs(parseFloat(wtiDailyChange))}%
-                                    </span>
-                                </div>
+                            <div className="flex gap-4 text-[10px] font-mono text-[#8892a0]">
+                                <span>BRENT: <span className="text-[#00d4ff] font-bold">${brentCurrent.toFixed(2)}</span></span>
+                                <span>WTI: <span className="text-[#00ff88] font-bold">${wtiCurrent.toFixed(2)}</span></span>
                             </div>
                         </div>
 
-                        {/* TREND INDICATORS - NEW VISUALIZATION */}
-                        <div className="space-y-4">
-                            <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs text-[#8892a0] font-mono">BRENT - Tendance 7 jours</span>
-                                    <span className={`text-xs font-bold ${parseFloat(brentChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
-                                        {parseFloat(brentChange) >= 0 ? '+' : ''}{brentChange}%
+                        {/* CHARTS CONTAINER */}
+                        <div className="flex-1 flex flex-col gap-4 min-h-0">
+
+                            {/* BRENT CHART */}
+                            <div className="flex-1 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden flex flex-col">
+                                <div className="absolute top-2 left-2 z-10 flex items-center gap-2">
+                                    <span className="text-[9px] font-bold bg-[#00d4ff]/20 text-[#00d4ff] px-2 py-0.5 rounded">BRENT</span>
+                                    <span className={`text-[9px] font-mono ${parseFloat(brentChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                        {parseFloat(brentChange) >= 0 ? '+' : ''}{brentChange}% (7j)
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1 h-12">
-                                    {brentTrend.map((val, i) => {
-                                        const minVal = Math.min(...brentTrend);
-                                        const maxVal = Math.max(...brentTrend);
-                                        const range = maxVal - minVal || 1;
-                                        const height = ((val - minVal) / range) * 100;
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                                                <div
-                                                    className="w-full bg-gradient-to-t from-[#00d4ff] to-[#00d4ff]/40 rounded-t transition-all hover:opacity-80"
-                                                    style={{ height: `${height}%` }}
-                                                    title={`$${val.toFixed(2)}`}
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
-                                    <span>J-6</span>
-                                    <span>J-3</span>
-                                    <span>Aujourd'hui</span>
+                                <div className="flex-1 w-full min-h-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={last7Days.length > 0 ? last7Days : OIL_DATA_MOCK}>
+                                            <defs>
+                                                <linearGradient id="colorBrent" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                            <XAxis
+                                                dataKey="timestamp"
+                                                hide={true}
+                                            />
+                                            <YAxis
+                                                domain={['auto', 'auto']}
+                                                orientation="right"
+                                                tick={{ fill: '#8892a0', fontSize: 9 }}
+                                                tickFormatter={(val) => `$${val}`}
+                                                width={40}
+                                                stroke="#ffffff10"
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#0d1526', border: '1px solid #00d4ff', borderRadius: '4px', fontSize: '11px' }}
+                                                itemStyle={{ color: '#00d4ff' }}
+                                                labelStyle={{ display: 'none' }}
+                                                formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Prix']}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="brent"
+                                                stroke="#00d4ff"
+                                                strokeWidth={2}
+                                                fillOpacity={1}
+                                                fill="url(#colorBrent)"
+                                                isAnimationActive={true}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-[#0d1526] border border-[#1a1f2e] rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs text-[#8892a0] font-mono">WTI - Tendance 7 jours</span>
-                                    <span className={`text-xs font-bold ${parseFloat(wtiChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
-                                        {parseFloat(wtiChange) >= 0 ? '+' : ''}{wtiChange}%
+                            {/* WTI CHART */}
+                            <div className="flex-1 bg-[#0a0e17] border border-[#1a1f2e] rounded relative overflow-hidden flex flex-col">
+                                <div className="absolute top-2 left-2 z-10 flex items-center gap-2">
+                                    <span className="text-[9px] font-bold bg-[#00ff88]/20 text-[#00ff88] px-2 py-0.5 rounded">WTI</span>
+                                    <span className={`text-[9px] font-mono ${parseFloat(wtiChange) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
+                                        {parseFloat(wtiChange) >= 0 ? '+' : ''}{wtiChange}% (7j)
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1 h-12">
-                                    {wtiTrend.map((val, i) => {
-                                        const minVal = Math.min(...wtiTrend);
-                                        const maxVal = Math.max(...wtiTrend);
-                                        const range = maxVal - minVal || 1;
-                                        const height = ((val - minVal) / range) * 100;
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                                                <div
-                                                    className="w-full bg-gradient-to-t from-[#00ff88] to-[#00ff88]/40 rounded-t transition-all hover:opacity-80"
-                                                    style={{ height: `${height}%` }}
-                                                    title={`$${val.toFixed(2)}`}
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex justify-between mt-2 text-[8px] text-[#8892a0] font-mono">
-                                    <span>J-6</span>
-                                    <span>J-3</span>
-                                    <span>Aujourd'hui</span>
+                                <div className="flex-1 w-full min-h-0">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={last7Days.length > 0 ? last7Days : OIL_DATA_MOCK}>
+                                            <defs>
+                                                <linearGradient id="colorWti" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#00ff88" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#00ff88" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                            <XAxis
+                                                dataKey="timestamp"
+                                                hide={true}
+                                            />
+                                            <YAxis
+                                                domain={['auto', 'auto']}
+                                                orientation="right"
+                                                tick={{ fill: '#8892a0', fontSize: 9 }}
+                                                tickFormatter={(val) => `$${val}`}
+                                                width={40}
+                                                stroke="#ffffff10"
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: '#0d1526', border: '1px solid #00ff88', borderRadius: '4px', fontSize: '11px' }}
+                                                itemStyle={{ color: '#00ff88' }}
+                                                labelStyle={{ display: 'none' }}
+                                                formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Prix']}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="wti"
+                                                stroke="#00ff88"
+                                                strokeWidth={2}
+                                                fillOpacity={1}
+                                                fill="url(#colorWti)"
+                                                isAnimationActive={true}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </div>
 
-                            {/* Market Summary */}
-                            <div className="grid grid-cols-2 gap-3 text-[10px]">
-                                <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
-                                    <span className="text-[#8892a0] block mb-1">Variation Jour</span>
-                                    <span className={`font-bold ${parseFloat(brentDailyDiff) >= 0 ? 'text-[#00ff88]' : 'text-[#ff3b3b]'}`}>
-                                        {parseFloat(brentDailyDiff) >= 0 ? '↑' : '↓'} ${Math.abs(parseFloat(brentDailyDiff)).toFixed(2)}
-                                    </span>
-                                </div>
-                                <div className="p-2 bg-[#0a0e17] border border-[#1a1f2e] rounded">
-                                    <span className="text-[#8892a0] block mb-1">Volume</span>
-                                    <span className="text-white font-bold">Élevé</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
