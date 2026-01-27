@@ -647,6 +647,37 @@ export default function Dashboard() {
                                                 ))}
                                             </div>
 
+                                            {/* SCORE GUIDE - NEW SECTION */}
+                                            <div className="mt-4 p-3 bg-[#0a0e17]/50 border border-[#1a1f2e] rounded text-[10px] text-[#8892a0]">
+                                                <details className="group cursor-pointer">
+                                                    <summary className="font-bold uppercase tracking-widest hover:text-[#00d4ff] transition-colors flex items-center gap-2 select-none">
+                                                        <span>ℹ️ Guide de Notation</span>
+                                                    </summary>
+                                                    <div className="mt-3 space-y-3 pl-2 border-l border-[#1a1f2e]">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                            <div>
+                                                                <span className="text-[#ff3b3b] font-bold block mb-1">TENSION</span>
+                                                                <p className="leading-relaxed opacity-80">Stabilité politique et sociale. 0=Calme, 10=Guerre Civile.</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[#00d4ff] font-bold block mb-1">VOLATILITÉ</span>
+                                                                <p className="leading-relaxed opacity-80">Instabilité éco/marchés. 0=Stable, 10=Effondrement.</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[#ff6b35] font-bold block mb-1">RISQUE</span>
+                                                                <p className="leading-relaxed opacity-80">Danger immédiat. 0=Faible, 10=Imminent.</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-2 text-center font-mono font-bold pt-2 border-t border-[#1a1f2e]">
+                                                            <div className="p-1 bg-[#00ff88]/10 text-[#00ff88] rounded">0-3 STABLE</div>
+                                                            <div className="p-1 bg-yellow-500/10 text-yellow-500 rounded">4-6 MODÉRÉ</div>
+                                                            <div className="p-1 bg-[#ff6b35]/10 text-[#ff6b35] rounded">7-8 ÉLEVÉ</div>
+                                                            <div className="p-1 bg-[#ff3b3b]/10 text-[#ff3b3b] rounded">9-10 CRITIQUE</div>
+                                                        </div>
+                                                    </div>
+                                                </details>
+                                            </div>
+
                                             {analysis.report.content && (
                                                 <div className="p-5 bg-white/5 rounded-xl border border-white/5">
                                                     <p className="text-sm leading-relaxed text-[#c0c8d6] whitespace-pre-wrap">
