@@ -8,16 +8,15 @@ interface jsPDFWithAutoTable extends jsPDF {
     };
 }
 
-// Couleurs du thème Venezuela Watch
+// Couleurs du thème "Le Guetteur" (Institutionnel / Militaire)
 const COLORS = {
-    primary: '#050505', // Almost black
-    secondary: '#0a0e17', // Dark blue-gray
-    accent: '#00d4ff', // Cyber Blue
-    highlight: '#00ff88', // Neo Green
-    danger: '#ff3b3b', // Red
-    text: '#ffffff',
-    textMuted: '#a0a0a0',
-    border: '#1a1f2e'
+    primary: '#1a3c6e', // Bleu Marine Institutionnel
+    accent: '#b80f0a', // Rouge Discret
+    text: '#2c3e50', // Gris Foncé
+    textLight: '#7f8c8d', // Gris Clair
+    background: '#ffffff',
+    sectionBg: '#f0f3f5', // Gris très pâle pour les blocs
+    line: '#bdc3c7'
 };
 
 export async function generateVenezuelaPDF(data: any) {
@@ -29,342 +28,244 @@ export async function generateVenezuelaPDF(data: any) {
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 20;
     let yPos = margin;
 
-    // ==================== PAGE DE COUVERTURE ====================
+    // ==================== HEADER (STYLE "LE GUETTEUR") ====================
 
-    // Fond Noir Cyber
-    doc.setFillColor(5, 5, 5); // #050505
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    // Bande de couleur en haut (Bleu Marine)
+    doc.setFillColor(COLORS.primary);
+    doc.rect(0, 0, pageWidth, 5, 'F');
 
-    // Bande décorative Neon
-    doc.setFillColor(0, 255, 136); // #00ff88
-    doc.rect(0, 0, pageWidth, 2, 'F');
-
-    // Titre principal
-    doc.setTextColor(0, 212, 255); // Cyber Blue
-    doc.setFontSize(36);
-    doc.setFont('helvetica', 'bold');
-    doc.text('VENEZUELA WATCH', pageWidth / 2, 60, { align: 'center' });
+    // Titre "LE GUETTEUR" style
+    yPos += 15;
+    doc.setFont('times', 'bold'); // Police Serif pour l'aspect officiel
+    doc.setFontSize(32);
+    doc.setTextColor(COLORS.primary);
+    doc.text('VENEZUELA WATCH', pageWidth / 2, yPos, { align: 'center' });
 
     // Sous-titre
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
+    yPos += 8;
     doc.setFont('helvetica', 'normal');
-    // spacing
-    doc.text('SYNTHÈSE TACTIQUE & STRATÉGIQUE', pageWidth / 2, 75, { align: 'center' });
+    doc.setFontSize(12);
+    doc.setTextColor(COLORS.textLight);
+    doc.text('BULLETIN DE VEILLE STRATÉGIQUE', pageWidth / 2, yPos, { align: 'center' });
 
-    // Date
-    doc.setTextColor(160, 160, 160);
+    // Date et Numéro
+    yPos += 12;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(COLORS.primary);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+
+    yPos += 6;
     doc.setFontSize(10);
+    doc.setTextColor(COLORS.text); // Noir
     const generatedDate = new Date(data.metadata.generatedAt);
     const dateStr = generatedDate.toLocaleDateString('fr-FR', {
-        day: '2-digit',
+        day: 'numeric',
         month: 'long',
         year: 'numeric'
     });
-    doc.text(`Généré le ${dateStr}`, pageWidth / 2, 90, { align: 'center' });
+    // Gauche: Date, Droite: Classification
+    doc.text(`DATE : ${dateStr.toUpperCase()}`, margin, yPos);
+    doc.text('DIFFUSION RESTREINTE', pageWidth - margin, yPos, { align: 'right' });
 
-    // Box avec évaluation
-    const boxY = 120;
-    doc.setDrawColor(0, 255, 136); // Neon Green
-    doc.setLineWidth(0.5);
-    // Darker box background
-    doc.setFillColor(10, 14, 23);
-    doc.roundedRect(margin, boxY, pageWidth - 2 * margin, 60, 3, 3, 'FD');
+    yPos += 4;
+    doc.line(margin, yPos, pageWidth - margin, yPos);
 
-    doc.setFontSize(14);
-    doc.setTextColor(0, 255, 136); // Neon Green
-    doc.setFont('helvetica', 'bold');
-    doc.text('ÉVALUATION RAPIDE', pageWidth / 2, boxY + 15, { align: 'center' });
+    // ==================== EDITO / SYNTHÈSE ====================
+    yPos += 15;
 
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'normal');
+    // Titre de section "ÉDITO"
+    drawSectionTitle(doc, 'SYNTHÈSE EXÉCUTIVE', margin, yPos);
+    yPos += 12;
 
-    const summary = data.aiSummary.synthese_executive;
-    doc.text(`Tendance: ${summary.tendance_generale}`, pageWidth / 2, boxY + 30, { align: 'center' });
-    doc.text(`Niveau de risque: ${summary.evaluation_risque}`, pageWidth / 2, boxY + 40, { align: 'center' });
+    // Contenu Édito (2 colonnes si possible, sinon 1 bloc propre)
+    // On utilise un fond gris léger pour l'édito pour le faire ressortir
+    doc.setFillColor(COLORS.sectionBg);
+    doc.roundedRect(margin, yPos - 5, pageWidth - (margin * 2), 40, 2, 2, 'F');
 
-    // Indicateurs
-    const gaugeY = boxY + 48;
-    const gaugeWidth = 50;
-    const indicators = data.aiSummary.indicateurs_cles;
-
-    doc.setFontSize(9);
-    doc.setTextColor(180, 180, 180);
-    doc.text('Tension Géopolitique', margin + 10, gaugeY - 2);
-    drawGauge(doc, margin + 10, gaugeY, gaugeWidth, indicators.tension_geopolitique);
-
-    doc.text('Risque Sanctions', pageWidth / 2 - gaugeWidth / 2, gaugeY - 2);
-    drawGauge(doc, pageWidth / 2 - gaugeWidth / 2, gaugeY, gaugeWidth, indicators.risque_sanctions);
-
-    doc.text('Volatilité Pétrole', pageWidth - margin - gaugeWidth - 10, gaugeY - 2);
-    drawGauge(doc, pageWidth - margin - gaugeWidth - 10, gaugeY, gaugeWidth, indicators.volatilite_petrole);
-
-    // Footer Cover
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    doc.text('CONFIDENTIEL // VENEZUELA WATCH // INTEL V2', pageWidth / 2, pageHeight - 15, { align: 'center' });
-
-    // ==================== PAGE 2: SYNTHÈSE EXECUTIVE ====================
-    doc.addPage();
-    // Background for every new page
-    doc.setFillColor(5, 5, 5);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    addPageHeader(doc, 'SYNTHÈSE EXECUTIVE', 2);
-    yPos = 35;
-
-    // Résumé
+    doc.setFont('times', 'italic');
     doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220); // Light gray text
-    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(COLORS.text);
+    const resume = data.aiSummary.synthese_executive?.resume_general || "Pas de résumé disponible.";
+    const resumeLines = doc.splitTextToSize(resume, pageWidth - (margin * 2) - 10);
+    doc.text(resumeLines, margin + 5, yPos + 3);
 
-    const resumeLines = doc.splitTextToSize(summary.resume_general, pageWidth - 2 * margin);
-    doc.text(resumeLines, margin, yPos);
-    yPos += resumeLines.length * 5 + 15;
+    yPos += 45; // Saut après la boîte édito
 
-    // Points clés
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 212, 255); // Cyber Blue
-    doc.text('POINTS CLÉS STRATÉGIQUES', margin, yPos);
+    // ==================== FAITS MARQUANTS ====================
+
+    drawSectionTitle(doc, 'FAITS MARQUANTS', margin, yPos);
     yPos += 10;
 
-    doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220);
+    const pointsCles = data.aiSummary.synthese_executive?.points_cles || [];
+
+    // On dessine les points clés avec des puces carrées rouges
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
 
-    summary.points_cles.forEach((point: string, index: number) => {
-        const bullet = `> ${index + 1}.`;
-        doc.setTextColor(0, 255, 136); // Green bullet
-        doc.text(bullet, margin + 2, yPos);
+    pointsCles.forEach((point: string) => {
+        // Puce
+        doc.setFillColor(COLORS.accent);
+        doc.rect(margin, yPos - 3, 2, 2, 'F');
 
-        doc.setTextColor(220, 220, 220); // White text
-        const pointLines = doc.splitTextToSize(point, pageWidth - 2 * margin - 15);
-        doc.text(pointLines, margin + 12, yPos);
-        yPos += pointLines.length * 6 + 4;
+        // Texte
+        const pointLines = doc.splitTextToSize(point, pageWidth - margin - 25); // Largeur ajustée
+        doc.text(pointLines, margin + 5, yPos);
+        yPos += (pointLines.length * 5) + 3;
     });
 
+    yPos += 5;
+
+    // ==================== TABLEAU INDICATEURS ====================
+
+    // Si on a de la place, sinon nouvelle page
+    if (yPos > pageHeight - 60) {
+        doc.addPage();
+        yPos = margin;
+    }
+
+    drawSectionTitle(doc, 'INDICATEURS DE TENSION', margin, yPos);
     yPos += 10;
 
-    // Tableau indicateurs
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 212, 255);
-    doc.text('INDICATEURS CLÉS', margin, yPos);
-    yPos += 10;
-
+    const indicators = data.aiSummary.indicateurs_cles;
     const indicatorData = [
         ['Tension Géopolitique', `${indicators.tension_geopolitique}/10`, getIndicatorLevel(indicators.tension_geopolitique)],
-        ['Volatilité Pétrole', `${indicators.volatilite_petrole}/10`, getIndicatorLevel(indicators.volatilite_petrole)],
         ['Risque Sanctions', `${indicators.risque_sanctions}/10`, getIndicatorLevel(indicators.risque_sanctions)],
-        ['Stabilité Régionale', `${indicators.stabilite_regionale}/10`, getIndicatorLevel(indicators.stabilite_regionale)],
-        ['Pression Internationale', `${indicators.pression_internationale}/10`, getIndicatorLevel(indicators.pression_internationale)]
+        ['Volatilité Pétrole', `${indicators.volatilite_petrole}/10`, getIndicatorLevel(indicators.volatilite_petrole)]
     ];
 
     autoTable(doc, {
         startY: yPos,
         head: [['Indicateur', 'Score', 'Niveau']],
         body: indicatorData,
-        theme: 'grid', // Better for dark mode than striped
+        theme: 'plain',
         headStyles: {
-            fillColor: [0, 212, 255],
-            textColor: [5, 5, 5], // Black text on blue header
+            fillColor: COLORS.primary,
+            textColor: 255,
             fontStyle: 'bold',
-            fontSize: 10,
-            lineColor: [0, 212, 255],
-            lineWidth: 0.1
+            halign: 'center'
         },
         bodyStyles: {
-            fontSize: 10,
-            fillColor: [10, 14, 23], // Dark body
-            textColor: [255, 255, 255],
-            lineColor: [40, 40, 40]
+            textColor: COLORS.text,
+            halign: 'center'
         },
         alternateRowStyles: {
-            fillColor: [15, 20, 30]
-        }
+            fillColor: COLORS.sectionBg
+        },
+        margin: { left: margin, right: margin }
     });
 
-    // ==================== PAGE 3: ANALYSE GÉOPOLITIQUE ====================
+    yPos = (doc as any).lastAutoTable.finalY + 15;
+
+    // ==================== ANALYSE DÉTAILLÉE ====================
+
     doc.addPage();
-    doc.setFillColor(5, 5, 5);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    addPageHeader(doc, 'ANALYSE GÉOPOLITIQUE', 3);
-    yPos = 35;
+    yPos = margin;
 
-    const geoAnalysis = data.aiSummary.analyse_geopolitique;
+    drawSectionTitle(doc, 'ANALYSE GÉOPOLITIQUE ET PÉTROLIÈRE', margin, yPos);
+    yPos += 10;
 
-    // Contexte
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 212, 255);
-    doc.text('Contexte Actuel', margin, yPos);
-    yPos += 8;
+    // 2 Colonnes simulées par des zones de texte
+    const colWidth = (pageWidth - (margin * 3)) / 2;
 
-    doc.setFont('helvetica', 'normal');
+    // Colonne 1: Géopolitique
+    doc.setFont('times', 'bold');
     doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220);
-    const contexteLines = doc.splitTextToSize(geoAnalysis.contexte, pageWidth - 2 * margin);
-    doc.text(contexteLines, margin, yPos);
-    yPos += contexteLines.length * 5 + 15;
+    doc.setTextColor(COLORS.primary);
+    doc.text('CONJONCTURE POLITIQUE', margin, yPos);
 
-    // Développements
-    if (yPos > pageHeight - 60) {
-        doc.addPage();
-        doc.setFillColor(5, 5, 5);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        addPageHeader(doc, 'ANALYSE GÉOPOLITIQUE (suite)', 4);
-        yPos = 35;
-    }
+    doc.setFont('times', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.text);
+    const geoText = (data.aiSummary.analyse_geopolitique?.contexte || "") + "\n\n" + (data.aiSummary.analyse_geopolitique?.developpements_recents || "");
+    const geoLines = doc.splitTextToSize(geoText, colWidth);
+    doc.text(geoLines, margin, yPos + 6);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 212, 255);
-    doc.text('Développements Récents', margin, yPos);
-    yPos += 8;
+    // Colonne 2: Pétrole / Économie
+    doc.setFont('times', 'bold');
+    doc.setTextColor(COLORS.primary);
+    doc.text('ÉNERGIE & ÉCONOMIE', margin + colWidth + margin, yPos);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220);
-    const devLines = doc.splitTextToSize(geoAnalysis.developpements_recents, pageWidth - 2 * margin);
-    doc.text(devLines, margin, yPos);
-    yPos += devLines.length * 5 + 15;
+    doc.setFont('times', 'normal');
+    doc.setTextColor(COLORS.text);
+    const ecoText = (data.aiSummary.analyse_economique?.situation_petrole || "") + "\n\n" + (data.aiSummary.analyse_economique?.sanctions_economiques || "");
+    const ecoLines = doc.splitTextToSize(ecoText, colWidth);
+    doc.text(ecoLines, margin + colWidth + margin, yPos + 6);
 
-    // Implications
-    if (yPos > pageHeight - 60) {
-        doc.addPage();
-        doc.setFillColor(5, 5, 5);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        addPageHeader(doc, 'ANALYSE GÉOPOLITIQUE (suite)', 5);
-        yPos = 35;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 212, 255);
-    doc.text('Implications', margin, yPos);
-    yPos += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220);
-    const implLines = doc.splitTextToSize(geoAnalysis.implications, pageWidth - 2 * margin);
-    doc.text(implLines, margin, yPos);
-
-    // ==================== PAGE 4: ANALYSE ÉCONOMIQUE ====================
+    // ==================== FIL D'ACTUALITÉS (SOURCE DE DONNÉES) ====================
     doc.addPage();
-    doc.setFillColor(5, 5, 5);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    addPageHeader(doc, 'ANALYSE ÉCONOMIQUE & PÉTROLIÈRE', doc.internal.pages.length - 1);
-    yPos = 35;
+    yPos = margin;
 
-    const ecoAnalysis = data.aiSummary.analyse_economique;
+    drawSectionTitle(doc, 'FIL D\'ACTUALITÉS ET ALERTES', margin, yPos);
+    yPos += 10;
 
-    // Secteur Pétrolier
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 212, 255);
-    doc.text('Secteur Pétrolier Vénézuélien', margin, yPos);
-    yPos += 8;
+    // Tableau des news récentes
+    const newsRows = data.rawData.news ? data.rawData.news.slice(0, 15).map((n: any) => [
+        new Date(n.created_at).toLocaleDateString('fr-FR'),
+        n.title,
+        n.source
+    ]) : [];
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(220, 220, 220);
-    const petroleLines = doc.splitTextToSize(ecoAnalysis.situation_petrole, pageWidth - 2 * margin);
-    doc.text(petroleLines, margin, yPos);
-    yPos += petroleLines.length * 5 + 15;
-
-    // Prix Box
-    if (data.rawData.oilPrices.brent) {
-        yPos += 5;
-        doc.setFillColor(15, 20, 30);
-        doc.setDrawColor(0, 255, 136);
-        doc.roundedRect(margin, yPos - 5, pageWidth - 2 * margin, 25, 2, 2, 'FD');
-
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 255, 136);
-        doc.text('PRIX ACTUELS DU PÉTROLE', margin + 5, yPos + 5);
-
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Brent: ${data.rawData.oilPrices.brent} USD/baril`, margin + 5, yPos + 15);
-        doc.text(`WTI: ${data.rawData.oilPrices.wti} USD/baril`, pageWidth / 2 + 10, yPos + 15);
-        yPos += 30;
+    if (newsRows.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Date', 'Titre de l\'information', 'Source']],
+            body: newsRows,
+            theme: 'grid',
+            headStyles: {
+                fillColor: COLORS.primary,
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 25 },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 30 }
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            alternateRowStyles: {
+                fillColor: COLORS.sectionBg
+            },
+            margin: { left: margin, right: margin }
+        });
+    } else {
+        doc.setFont('times', 'italic');
+        doc.text("Aucune actualité récente à afficher.", margin, yPos);
     }
 
-    // Marché mondial & Sanctions (reste du code similaire avec nouvelles couleurs)
-    // ... [Reste du code à adapter, je tronque ici pour rester focus sur les changements principaux]
-
-    // Suite du contenu existant avec adaptation couleurs automatique via replace_file_content...
-
-    // ==================== PAGE 6: ALERTES (Special Styling) ====================
-    // Need to handle the loops correctly. 
-    // I will return the replacement chunk focusing on the main structure.
-
-    // ...
+    // Pied de page (sur toutes les pages)
+    const pageCount = doc.internal.pages.length - 1; // -1 car jsPDF compte une page vide initiale parfois ou index 1-based
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`MINISTÈRE DES ARMÉES - LE GUETTEUR / VENEZUELA WATCH - PAGE ${i}/${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
 
     // Sauvegarder
-    const fileName = `Venezuela_Watch_Synthese_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `Le_Guetteur_Venezuela_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
 
     return fileName;
 }
 
-// Helper functions updated for dark mode
-function addPageHeader(doc: jsPDFWithAutoTable, title: string, pageNum: number) {
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    // Bande haut
-    doc.setFillColor(0, 212, 255);
-    doc.rect(0, 0, pageWidth, 2, 'F'); // Thinner line
-
-    // Titre
-    doc.setFontSize(12);
+// Fonction utilitaire pour dessiner un titre de section style "Guetteur"
+function drawSectionTitle(doc: jsPDF, title: string, x: number, y: number) {
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 212, 255);
-    doc.text(title, 15, 15);
+    doc.setFontSize(12);
+    doc.setTextColor(COLORS.accent); // Rouge
+    doc.text(title.toUpperCase(), x, y);
 
-    // Page number
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`PAGE ${pageNum}`, pageWidth - 15, 15, { align: 'right' });
-
-    // Ligne separator
-    doc.setDrawColor(30, 30, 30);
-    doc.line(15, 20, pageWidth - 15, 20);
-}
-
-function drawGauge(doc: jsPDF, x: number, y: number, width: number, value: number) {
-    const height = 4;
-    const fillWidth = (value / 10) * width;
-
-    // Fond jauge dark
-    doc.setFillColor(30, 30, 40);
-    doc.rect(x, y, width, height, 'F');
-
-    // Remplissage
-    let color = value < 4 ? [0, 255, 136] : // Green
-        value < 7 ? [255, 165, 0] : // Orange
-            [255, 59, 59];  // Red
-
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.rect(x, y, fillWidth, height, 'F');
-
-    // Bordure
-    doc.setDrawColor(60, 60, 60);
-    doc.rect(x, y, width, height, 'S');
-
-    // Valeur text
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${value}/10`, x + width + 3, y + 3);
+    // Ligne de soulignement fine
+    const textWidth = doc.getTextWidth(title.toUpperCase());
+    doc.setDrawColor(COLORS.line);
+    doc.setLineWidth(0.5);
+    doc.line(x, y + 2, x + textWidth + 10, y + 2);
 }
 
 function getIndicatorLevel(value: number): string {
