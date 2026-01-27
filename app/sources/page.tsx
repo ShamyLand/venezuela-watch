@@ -100,6 +100,32 @@ export default function SourcesPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={async () => {
+                            const btn = document.getElementById('btn-analyze');
+                            if (btn) {
+                                btn.innerText = "ANALYSE EN COURS...";
+                                (btn as any).disabled = true;
+                            }
+                            try {
+                                const res = await fetch('/api/cron/analyze');
+                                if (!res.ok) throw new Error('API Failed');
+                                alert("Analyse terminée ! La page va se recharger.");
+                                window.location.reload();
+                            } catch (e) {
+                                alert("Erreur lors du lancement de l'analyse (Timeout possible). Vérifiez les logs.");
+                                console.error(e);
+                                if (btn) {
+                                    btn.innerText = "ERREUR (RÉESSAYER)";
+                                    (btn as any).disabled = false;
+                                }
+                            }
+                        }}
+                        id="btn-analyze"
+                        className="flex items-center gap-1.5 px-3 py-1 bg-[#1a1f2e] border border-[#1a1f2e] hover:border-[#F59E0B]/50 hover:text-[#F59E0B] rounded text-[10px] font-mono text-[#8892a0] transition-all"
+                    >
+                        <Cpu className="w-3 h-3" /> LANCER ANALYSE IA
+                    </button>
                     <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1 bg-[#1a1f2e] border border-[#1a1f2e] hover:border-[#00d4ff]/50 rounded text-[10px] font-mono text-[#8892a0] transition-all">
                         <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> RAFRAÎCHIR
                     </button>
