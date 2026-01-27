@@ -523,11 +523,11 @@ export default function Dashboard() {
                                                 hide={true}
                                             />
                                             <YAxis
-                                                domain={['auto', 'auto']}
+                                                domain={[(dataMin: number) => (dataMin - 0.5).toFixed(2), (dataMax: number) => (dataMax + 0.5).toFixed(2)]}
                                                 orientation="right"
                                                 tick={{ fill: '#8892a0', fontSize: 9 }}
-                                                tickFormatter={(val) => `$${val}`}
-                                                width={40}
+                                                tickFormatter={(val) => `$${Number(val).toFixed(0)}`}
+                                                width={30}
                                                 stroke="#ffffff10"
                                             />
                                             <Tooltip
